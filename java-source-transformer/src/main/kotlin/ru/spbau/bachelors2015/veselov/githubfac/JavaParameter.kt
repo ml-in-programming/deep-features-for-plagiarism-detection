@@ -1,19 +1,17 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
-import com.github.javaparser.ast.body.VariableDeclarator
-import com.github.javaparser.ast.expr.FieldAccessExpr
+import com.github.javaparser.ast.body.Parameter
 import com.github.javaparser.ast.expr.NameExpr
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter
 import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import com.github.javaparser.symbolsolver.model.resolution.SymbolReference
-import java.lang.reflect.Field
 
-class JavaField(private val context: SourceContext,
-                private val variableDeclarator: VariableDeclarator) {
+class JavaParameter(private val context: SourceContext,
+                    private val parameter: Parameter) {
     fun simpleName(): String {
-        return variableDeclarator.getNameAsString()
+        return parameter.getNameAsString()
     }
 
     fun renameTo(newName: String) {
@@ -31,31 +29,18 @@ class JavaField(private val context: SourceContext,
                         return
                     }
 
-                    val fieldDeclaration = try {
-                        symbolReference.correspondingDeclaration as JavaParserFieldDeclaration
+                    val parameterDeclaration = try {
+                        symbolReference.correspondingDeclaration as JavaParserParameterDeclaration
                     } catch (e: ClassCastException) {
                         return
                     }
 
-                    val field: Field = fieldDeclaration.javaClass
-                            .getDeclaredField("variableDeclarator")
-
-                    field.setAccessible(true)
-                    val thatVariableDeclarator =
-                            field.get(fieldDeclaration) as VariableDeclarator
-
-                    if (thatVariableDeclarator === variableDeclarator) {
+                    if (parameterDeclaration.wrappedNode === parameter) {
                         n.setName(newName)
                     }
                 }
-
-                override fun visit(
-                    n: FieldAccessExpr,
-                    void: Void?
-                ) {
-                }
             }, null)
 
-        variableDeclarator.setName(newName)
+        parameter.setName(newName)
     }
 }

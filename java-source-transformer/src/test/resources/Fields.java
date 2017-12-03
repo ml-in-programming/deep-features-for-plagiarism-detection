@@ -10,8 +10,8 @@ public class A {
         B o = new B();
         o.m();
 
-        o.f3 = b;
-        this.b = o.f3 + l;
+        o.b = b;
+        this.b = o.b + l;
     }
 }
 
@@ -19,8 +19,8 @@ class B {
     public int b = 0;
 
     public void m() {
-        f3 = 1;
-        int l = f3 + this.f3;
-        f3 = l * l;
+        b = 1;
+        int l = b + this.b;
+        b = l * l;
     }
 }

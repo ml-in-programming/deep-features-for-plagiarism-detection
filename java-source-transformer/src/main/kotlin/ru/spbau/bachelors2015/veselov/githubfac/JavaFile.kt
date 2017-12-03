@@ -9,6 +9,18 @@ class JavaFile(sourceCode: String) {
         return context.fields()
     }
 
+    fun localVars(): List<JavaLocalVar> {
+        return context.localVars()
+    }
+
+    fun methods(): List<JavaMethod> {
+        return context.methods()
+    }
+
+    fun parameters(): List<JavaParameter> {
+        return context.parameters()
+    }
+
     fun printCode() : String {
         return LexicalPreservingPrinter.print(context.unit)
     }
