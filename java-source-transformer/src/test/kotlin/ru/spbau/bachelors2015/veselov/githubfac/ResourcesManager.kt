@@ -12,6 +12,8 @@ object ResourcesManager {
 
     private val renamed = "renamed"
 
+    private val shifted = "shifted"
+
     fun getAllNames() : ArrayList<String> {
         val sourceRoot = Paths.get(javaClass.getResource("/$origin/").toURI())
         val names = ArrayList<String>()
@@ -31,23 +33,27 @@ object ResourcesManager {
     }
 
     fun getOrigin(name: String) : String {
-        return getFromFolder(name, origin, ".java")
+        return getFromFolder(name, origin, ".java") ?: throw IllegalArgumentException()
     }
 
-    fun getDeclarations(name: String) : List<String> {
-        return getFromFolder(name, declarations, "").split('\n')
+    fun getDeclarations(name: String) : List<String>? {
+        return getFromFolder(name, declarations, "")?.split('\n')
     }
 
-    fun getRenamed(name: String) : String {
+    fun getRenamed(name: String) : String? {
         return getFromFolder(name, renamed, ".java")
     }
 
-    private fun getFromFolder(fileName: String, folderName: String, suffix: String) : String {
+    fun getShifted(name: String) : String? {
+        return getFromFolder(name, shifted, ".java")
+    }
+
+    private fun getFromFolder(fileName: String, folderName: String, suffix: String) : String? {
         return fileToString("/$folderName/$fileName$suffix")
     }
 
-    private fun fileToString(fileName: String) : String {
-        val pathToFile = Paths.get(javaClass.getResource(fileName).file)
-        return FileUtils.readFileToString(pathToFile.toFile(), null as Charset?)
+    private fun fileToString(fileName: String) : String? {
+        val url = javaClass.getResource(fileName)?.file ?: return null
+        return FileUtils.readFileToString(Paths.get(url).toFile(), null as Charset?)
     }
 }

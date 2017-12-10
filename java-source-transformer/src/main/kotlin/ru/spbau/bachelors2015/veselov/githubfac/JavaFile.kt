@@ -4,36 +4,35 @@ import com.github.javaparser.JavaParser
 import com.github.javaparser.ParserConfiguration
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node
-import com.github.javaparser.ast.body.FieldDeclaration
-import com.github.javaparser.ast.body.MethodDeclaration
-import com.github.javaparser.ast.body.Parameter
-import com.github.javaparser.ast.body.VariableDeclarator
+import com.github.javaparser.ast.NodeList
+import com.github.javaparser.ast.body.*
+import com.github.javaparser.ast.comments.BlockComment
+import com.github.javaparser.ast.comments.JavadocComment
+import com.github.javaparser.ast.comments.LineComment
 import com.github.javaparser.ast.expr.FieldAccessExpr
 import com.github.javaparser.ast.expr.MethodCallExpr
 import com.github.javaparser.ast.expr.NameExpr
 import com.github.javaparser.ast.expr.VariableDeclarationExpr
+import com.github.javaparser.ast.nodeTypes.NodeWithMembers
+import com.github.javaparser.ast.nodeTypes.NodeWithParameters
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName
 import com.github.javaparser.ast.visitor.GenericListVisitorAdapter
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter
 import com.github.javaparser.printer.JsonPrinter
-import com.github.javaparser.printer.XmlPrinter
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter
 import com.github.javaparser.resolution.declarations.ResolvedDeclaration
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
-import com.github.javaparser.resolution.declarations.ResolvedValueDeclaration
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
-import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserMethodDeclaration
 import com.github.javaparser.symbolsolver.model.resolution.SymbolReference
 import com.github.javaparser.symbolsolver.model.resolution.TypeSolver
-import com.github.javaparser.symbolsolver.resolution.SymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
 import org.apache.commons.io.FileUtils
 import java.lang.reflect.Field
 import java.nio.charset.Charset
+import java.util.*
 
 class JavaFile(sourceCode: String) {
     private val javaParserTypeSolver: TypeSolver
@@ -61,7 +60,7 @@ class JavaFile(sourceCode: String) {
 
         javaParserFacade = JavaParserFacade.get(javaParserTypeSolver)
 
-        LexicalPreservingPrinter.setup(unit) // pitfall
+        LexicalPreservingPrinter.setup(unit) // todo: pitfall
     }
 
     fun printCode() : String {
@@ -116,6 +115,7 @@ class JavaFile(sourceCode: String) {
         node.setName(newName)
     }
 
+    // todo: classes
     fun declarations(): List<NodeWithSimpleName<out Node>> {
         return unit.accept(
             object : GenericListVisitorAdapter<NodeWithSimpleName<out Node>, Void?>() {
@@ -171,6 +171,57 @@ class JavaFile(sourceCode: String) {
                     return list
                 }
             }, null)
+    }
+
+    fun declarationsWithMembers(): List<NodeWithMembers<out Node>> {
+        return unit.accept(
+            object : GenericListVisitorAdapter<NodeWithMembers<out Node>, Void?>() {
+                // fields
+                override fun visit(
+                    n: ClassOrInterfaceDeclaration,
+                    void: Void?
+                ): List<NodeWithMembers<out Node>> {
+                    val list: MutableList<NodeWithMembers<out Node>> =
+                            super.visit(n, void) ?: mutableListOf()
+
+                    list.add(n)
+
+                    return list
+                }
+            }, null)
+    }
+
+    fun declarationsWithParameters(): List<NodeWithParameters<out Node>> {
+        return unit.accept(
+            object : GenericListVisitorAdapter<NodeWithParameters<out Node>, Void?>() {
+                override fun visit(
+                    n: MethodDeclaration,
+                    void: Void?
+                ): List<NodeWithParameters<out Node>> {
+                    val list: MutableList<NodeWithParameters<out Node>> =
+                            super.visit(n, void) ?: mutableListOf()
+
+                    list.add(n)
+
+                    return list
+                }
+            }, null)
+    }
+
+    fun shuffleMembers(node: NodeWithMembers<out Node>, random: Random) {
+        // todo: indentation
+
+        val members: NodeList<BodyDeclaration<*>> = node.members
+        Collections.shuffle(members, random)
+        node.members = members
+    }
+
+    fun shuffleParameters(node: NodeWithParameters<out Node>, random: Random) {
+        // todo: looks similar to previous function
+
+        val parameters: NodeList<Parameter> = node.parameters
+        Collections.shuffle(parameters, random)
+        node.parameters = parameters
     }
 
     private fun getDeclarationNode(declaration: ResolvedDeclaration) : Node {

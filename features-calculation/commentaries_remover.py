@@ -5,6 +5,13 @@ import os
 from commons import get_text_file_content
 
 
+def repl(matchobj):
+    if matchobj.group(3) is not None:
+        return '""'
+    else:
+        return ''
+
+
 def main(dir_name):
     all_files = []
     for root, _, files in os.walk(dir_name):
@@ -12,7 +19,7 @@ def main(dir_name):
 
     for file in all_files:
         content = get_text_file_content(os.path.join(dir_name, file))
-        content = re.sub(r'(/\*.*?\*/)|(//.*?' '(\n|\r|\r\n|$)' r')', '', content, flags=re.DOTALL)
+        content = re.sub(r'(/\*.*?\*/)|(//.*?$)|(".*?")', repl, content, flags=re.DOTALL | re.MULTILINE)
 
         pref, name = os.path.split(dir_name)
         if len(name) > 0:
