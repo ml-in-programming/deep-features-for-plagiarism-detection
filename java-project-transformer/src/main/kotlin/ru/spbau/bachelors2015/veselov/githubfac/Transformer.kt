@@ -2,24 +2,52 @@ package ru.spbau.bachelors2015.veselov.githubfac
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
+import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import org.apache.commons.io.FileUtils
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 
 class Transformer(private val project: Project) {
     val log: Log = Log()
 
+    private var transformationDirectory: VirtualFile
+
+    private var originalSubdirectory: VirtualFile
+
+    private var transformedSubdirectory: VirtualFile
+
+    init {
+        val transformationName = "transformation"
+
+        val existedDir = LocalFileSystem.getInstance().findFileByIoFile(
+            Paths.get(project.baseDir.canonicalPath).resolve(transformationName).toFile()
+        )
+
+        existedDir?.delete(this)
+
+        transformationDirectory = project.baseDir.createChildDirectory(
+            this,
+            transformationName
+        )
+
+        originalSubdirectory = transformationDirectory.createChildDirectory(
+            this,
+            "original"
+        )
+
+        transformedSubdirectory = transformationDirectory.createChildDirectory(
+            this,
+            "transformed"
+        )
+    }
+
     fun perform() {
-        val transformationDirectory = Paths.get(project.baseDir.canonicalPath).resolve("transformation").toFile()
-        if (transformationDirectory.exists()) {
-            FileUtils.deleteDirectory(transformationDirectory)
-        }
-
-        transformationDirectory.mkdir()
-
         val appropriateFiles = getAppropriateFiles()
         val sampleFiles = getRandomSample(appropriateFiles)
+
+        for (file in sampleFiles) {
+            file.copy(this, originalSubdirectory, file.name)
+        }
     }
 
     private fun getAppropriateFiles() : List<VirtualFile> {

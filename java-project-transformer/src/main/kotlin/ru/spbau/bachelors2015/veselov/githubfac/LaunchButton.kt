@@ -3,6 +3,7 @@ package ru.spbau.bachelors2015.veselov.githubfac
 import com.intellij.openapi.actionSystem.AnAction
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.actionSystem.PlatformDataKeys
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.ui.Messages
 
 class LaunchButton : AnAction() {
@@ -20,6 +21,8 @@ class LaunchButton : AnAction() {
             return
         }
 
-        Transformer(project).perform()
+        WriteCommandAction.runWriteCommandAction(project, {
+            Transformer(project).perform()
+        })
     }
 }
