@@ -9,7 +9,17 @@ class LaunchButton : AnAction() {
     override fun actionPerformed(event: AnActionEvent) {
         val project = event.getData(PlatformDataKeys.PROJECT)
 
-        val txt = Messages.showInputDialog(project, "What is your name?", "Input your name", Messages.getQuestionIcon())
-        Messages.showMessageDialog(project, "Hello, $txt!\n I am glad to see you.", "Information", Messages.getInformationIcon())
+        if (project == null) {
+            Messages.showMessageDialog(
+                project,
+                "Problems with getting of project",
+                "Information",
+                Messages.getInformationIcon()
+            )
+
+            return
+        }
+
+        Transformator(project).perform()
     }
 }
