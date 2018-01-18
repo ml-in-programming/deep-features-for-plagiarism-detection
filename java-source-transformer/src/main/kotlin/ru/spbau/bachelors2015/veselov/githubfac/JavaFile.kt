@@ -1,14 +1,9 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
-import com.github.javaparser.JavaParser
-import com.github.javaparser.ParserConfiguration
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node
 import com.github.javaparser.ast.NodeList
 import com.github.javaparser.ast.body.*
-import com.github.javaparser.ast.comments.BlockComment
-import com.github.javaparser.ast.comments.JavadocComment
-import com.github.javaparser.ast.comments.LineComment
 import com.github.javaparser.ast.expr.FieldAccessExpr
 import com.github.javaparser.ast.expr.MethodCallExpr
 import com.github.javaparser.ast.expr.NameExpr
@@ -17,108 +12,113 @@ import com.github.javaparser.ast.nodeTypes.NodeWithMembers
 import com.github.javaparser.ast.nodeTypes.NodeWithParameters
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName
 import com.github.javaparser.ast.visitor.GenericListVisitorAdapter
-import com.github.javaparser.ast.visitor.VoidVisitorAdapter
-import com.github.javaparser.printer.JsonPrinter
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter
 import com.github.javaparser.resolution.declarations.ResolvedDeclaration
-import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserFieldDeclaration
 import com.github.javaparser.symbolsolver.model.resolution.SymbolReference
-import com.github.javaparser.symbolsolver.model.resolution.TypeSolver
-import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver
-import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver
-import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
-import org.apache.commons.io.FileUtils
 import java.lang.reflect.Field
-import java.nio.charset.Charset
+import java.nio.file.Path
 import java.util.*
 
-class JavaFile(sourceCode: String) {
-    private val javaParserTypeSolver: TypeSolver
-
+class JavaFile(
+    val path: Path,
+    private val unit: CompilationUnit,
     private val javaParserFacade: JavaParserFacade
-
-    private val unit: CompilationUnit
-
-    init {
-        val tmpDir = createTempDir()
-        val tmpFile = createTempFile(directory = tmpDir)
-        FileUtils.write(tmpFile, sourceCode, null as Charset?)
-
-        javaParserTypeSolver = CombinedTypeSolver()
-        javaParserTypeSolver.add(ReflectionTypeSolver())
-        javaParserTypeSolver.add(JavaParserTypeSolver(tmpDir))
-
-        val pc = ParserConfiguration()
-        pc.setSymbolResolver(JavaSymbolSolver(javaParserTypeSolver))
-
-        JavaParser.setStaticConfiguration(pc)
-        unit = JavaParser.parse(tmpFile)
-        val printer = JsonPrinter(true)
-        println(printer.output(unit))
-
-        javaParserFacade = JavaParserFacade.get(javaParserTypeSolver)
-
-        LexicalPreservingPrinter.setup(unit) // todo: pitfall
-    }
-
+) {
     fun printCode() : String {
         return LexicalPreservingPrinter.print(unit)
     }
 
-    fun rename(node: NodeWithSimpleName<out Node>, newName: String) {
-        unit.accept(
-            object : VoidVisitorAdapter<Void?>() {
+    fun setupPrinting() {
+        LexicalPreservingPrinter.setup(unit) // todo: pitfall
+    }
+
+    fun linesOfCode() : Int {
+        return 1 + unit.tokenRange.get().count { it.category.isEndOfLine }
+    }
+
+    fun usages(declaration: NodeWithSimpleName<out Node>) : List<NodeWithSimpleName<out Node>>{
+        println("Usages of $declaration")
+
+        return unit.accept(
+            object : GenericListVisitorAdapter<NodeWithSimpleName<out Node>, Void?>() {
                 override fun visit(
                     n: NameExpr,
                     void: Void?
-                ) {
-                    super.visit(n, void)
+                ) : List<NodeWithSimpleName<out Node>> {
+                    val list: MutableList<NodeWithSimpleName<out Node>> =
+                            super.visit(n, void) ?: mutableListOf()
 
-                    rename(n, javaParserFacade.solve(n))
+                    if (isUsage(javaParserFacade.solve(n))) {
+                        list.add(n)
+                    }
+
+                    return list
                 }
 
                 override fun visit(
                     n: MethodCallExpr,
                     void: Void?
-                ) {
-                    super.visit(n, void)
+                ) : List<NodeWithSimpleName<out Node>> {
+                    val list: MutableList<NodeWithSimpleName<out Node>> =
+                            super.visit(n, void) ?: mutableListOf()
 
-                    rename(n, javaParserFacade.solve(n))
+                    if (isUsage(javaParserFacade.solve(n))) {
+                        list.add(n)
+                    }
+
+                    return list
                 }
 
                 override fun visit(
                     n: FieldAccessExpr,
                     void: Void?
-                ) {
-                    super.visit(n, void)
+                ) : List<NodeWithSimpleName<out Node>> {
+                    val list: MutableList<NodeWithSimpleName<out Node>> =
+                            super.visit(n, void) ?: mutableListOf()
 
                     // todo
+
+                    return list
                 }
 
-                private fun rename(
-                    n: NodeWithSimpleName<out Node>,
+                private fun isUsage(
                     reference: SymbolReference<out ResolvedDeclaration>
-                ) {
+                ) : Boolean {
                     if (!reference.isSolved) {
-                        return
+                        return false
                     }
 
-                    val declaration = reference.correspondingDeclaration
-                    if (getDeclarationNode(declaration) === node) {
-                        n.setName(newName)
-                    }
+                    return getDeclarationNode(reference.correspondingDeclaration) === declaration
                 }
             }, null)
-
-        node.setName(newName)
     }
 
-    // todo: classes
+    fun rename(declaration: NodeWithSimpleName<out Node>, newName: String) {
+        for (usage in usages(declaration)) {
+            usage.setName(newName)
+        }
+
+        declaration.setName(newName)
+    }
+
     fun declarations(): List<NodeWithSimpleName<out Node>> {
         return unit.accept(
             object : GenericListVisitorAdapter<NodeWithSimpleName<out Node>, Void?>() {
+                // classes and interfaces
+                override fun visit(
+                    n: ClassOrInterfaceDeclaration,
+                    void: Void?
+                ): List<NodeWithSimpleName<out Node>> {
+                    val list: MutableList<NodeWithSimpleName<out Node>> =
+                            super.visit(n, void) ?: mutableListOf()
+
+                    list.add(n)
+
+                    return list
+                }
+
                 // fields
                 override fun visit(
                     n: FieldDeclaration,
@@ -224,7 +224,7 @@ class JavaFile(sourceCode: String) {
         node.parameters = parameters
     }
 
-    private fun getDeclarationNode(declaration: ResolvedDeclaration) : Node {
+    private fun getDeclarationNode(declaration: ResolvedDeclaration) : Node? {
         if (declaration is JavaParserFieldDeclaration) {
             val field: Field = declaration.javaClass.getDeclaredField("variableDeclarator")
 
@@ -232,7 +232,12 @@ class JavaFile(sourceCode: String) {
             return field.get(declaration) as Node
         }
 
-        val method = declaration.javaClass.getMethod("getWrappedNode")
+        val method = try {
+            declaration.javaClass.getMethod("getWrappedNode")
+        } catch (_: NoSuchMethodException) {
+            return null
+        }
+
         return method.invoke(declaration) as Node
     }
 }

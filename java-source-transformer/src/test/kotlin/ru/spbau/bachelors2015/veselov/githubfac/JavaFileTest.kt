@@ -9,6 +9,25 @@ import java.util.*
 
 class JavaFileTest {
     @Test
+    fun testInterfaceInAnotherFile() {
+        val project = JavaProject(
+            ResourcesManager.getPathToSubFolder("interface-in-another-file")
+        )
+
+        val declarations = project.declarations()
+        val javaFile = project.files.first {
+            it.path.toString() == "Implementation.java"
+        }
+
+        javaFile.setupPrinting()
+        for ((ctr, declaration) in declarations.withIndex()) {
+            javaFile.usages(declaration)
+        }
+
+        println(javaFile.printCode())
+    }
+
+    /*@Test
     fun testGetDeclarations() {
         for (name in ResourcesManager.getAllNames()) {
             val actualDeclarations = ResourcesManager.getDeclarations(name) ?: continue
@@ -76,5 +95,5 @@ class JavaFileTest {
         }
 
         assertThat(file.printCode(), equalTo(actualShift))
-    }
+    }*/
 }

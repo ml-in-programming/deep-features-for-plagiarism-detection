@@ -32,6 +32,10 @@ object ResourcesManager {
         return names
     }
 
+    fun getPathToSubFolder(name: String) : Path {
+        return Paths.get(javaClass.getResource("/$name").toURI())
+    }
+
     fun getOrigin(name: String) : String {
         return getFromFolder(name, origin, ".java") ?: throw IllegalArgumentException()
     }
