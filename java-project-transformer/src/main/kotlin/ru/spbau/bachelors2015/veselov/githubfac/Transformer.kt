@@ -2,23 +2,40 @@ package ru.spbau.bachelors2015.veselov.githubfac
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
-import com.intellij.openapi.ui.Messages
-import java.io.File
-import java.nio.file.Path
+import com.intellij.openapi.vfs.VirtualFile
+import org.apache.commons.io.FileUtils
 import java.nio.file.Paths
 
-class Transformer(val project: Project) {
+class Transformer(private val project: Project) {
+    val log: Log = Log()
+
     fun perform() {
-        val trasformationDirectory = Paths.get(project.baseDir.canonicalPath).resolve("transformation").toFile()
-        if (trasformationDirectory.exists()) {
-            // FileUtils.deleteDirectory(new File("directory"));
-            trasformationDirectory.delete()
+        val transformationDirectory = Paths.get(project.baseDir.canonicalPath).resolve("transformation").toFile()
+        if (transformationDirectory.exists()) {
+            FileUtils.deleteDirectory(transformationDirectory)
         }
 
-        trasformationDirectory.mkdir()
+        transformationDirectory.mkdir()
 
-        /*ProjectFileIndex.SERVICE.getInstance(project).iterateContent {
-            TODO("not implemented")
-        }*/
+        val appropriateFiles = getAppropriateFiles()
+
+        log.write("${appropriateFiles.size} good java files detected")
+        for (file in appropriateFiles) {
+            log.write(file.path)
+        }
+    }
+
+    private fun getAppropriateFiles() : List<VirtualFile> {
+        val result: MutableList<VirtualFile> = mutableListOf()
+
+        ProjectFileIndex.SERVICE.getInstance(project).iterateContent {
+            if (FileChecker.isAppropriate(it)) {
+                result.add(it)
+            }
+
+            return@iterateContent true
+        }
+
+        return result
     }
 }
