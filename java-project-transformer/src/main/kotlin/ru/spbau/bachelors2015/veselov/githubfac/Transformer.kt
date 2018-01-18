@@ -7,7 +7,7 @@ import java.io.File
 import java.nio.file.Path
 import java.nio.file.Paths
 
-class Transformator(val project: Project) {
+class Transformer(val project: Project) {
     fun perform() {
         val trasformationDirectory = Paths.get(project.baseDir.canonicalPath).resolve("transformation").toFile()
         if (trasformationDirectory.exists()) {

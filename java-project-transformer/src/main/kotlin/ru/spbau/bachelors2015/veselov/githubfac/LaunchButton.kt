@@ -11,15 +11,15 @@ class LaunchButton : AnAction() {
 
         if (project == null) {
             Messages.showMessageDialog(
-                project,
-                "Problems with getting of project",
-                "Information",
-                Messages.getInformationIcon()
+                    project,
+                    "Problems with getting of project",
+                    "Information",
+                    Messages.getInformationIcon()
             )
 
             return
         }
 
-        Transformator(project).perform()
+        Transformer(project).perform()
     }
 }
