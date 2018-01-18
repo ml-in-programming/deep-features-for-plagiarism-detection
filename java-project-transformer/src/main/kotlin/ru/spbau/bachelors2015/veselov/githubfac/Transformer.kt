@@ -4,6 +4,9 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
+import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiManager
+import com.intellij.psi.PsiRecursiveElementWalkingVisitor
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 
@@ -47,6 +50,17 @@ class Transformer(private val project: Project) {
 
         for (file in sampleFiles) {
             file.copy(this, originalSubdirectory, file.name)
+        }
+
+        // TODO: experimental
+        for (file in sampleFiles) {
+            val psiFile = PsiManager.getInstance(project).findFile(file)
+            psiFile?.accept(object : PsiRecursiveElementWalkingVisitor() {
+                override fun visitElement(element: PsiElement) {
+                    super.visitElement(element)
+                    log.write(element.toString())
+                }
+            })
         }
     }
 
