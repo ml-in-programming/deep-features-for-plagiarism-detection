@@ -5,6 +5,8 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
+import com.intellij.psi.search.ProjectScope
+import com.intellij.psi.search.searches.AllClassesSearch
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 
@@ -97,23 +99,25 @@ class Transformer(private val project: Project) {
     private fun transformFile(file: PsiJavaFile) {
         log.write(file.toString())
 
-        for (clazz: PsiClass in file.classes) {
-            log.write(clazz.toString())
-            transformClass(clazz)
-        }
+        object : JavaRecursiveElementVisitor() {
+            override fun visitAnonymousClass(aClass: PsiAnonymousClass) {
+                super.visitAnonymousClass(aClass)
+                processClass(aClass)
+            }
+
+            override fun visitClass(aClass: PsiClass) {
+                super.visitClass(aClass)
+                processClass(aClass)
+            }
+
+            private fun processClass(aClass: PsiClass) {
+                log.write(aClass.toString())
+                transformClass(aClass)
+            }
+        }.visitElement(file)
     }
 
     private fun transformClass(clazz: PsiClass) {
-        for (innerClass in clazz.innerClasses) {
-            transformClass(innerClass)
-        }
-
-        if (clazz.isEnum) {
-            for (f in clazz.fields) {
-                log.write(f.toString())
-            }
-        }
-
         val anchor = clazz.lBrace
         val children = (
             clazz.methods.toList() as List<PsiElement> +
@@ -125,10 +129,10 @@ class Transformer(private val project: Project) {
             val factory = JavaPsiFacade.getInstance(project).elementFactory
 
             return when (element) {
-                is PsiMethod -> factory.createMethodFromText(element.text, clazz)
-                is PsiEnumConstant -> factory.createEnumConstantFromText(element.text, clazz)
-                is PsiField -> factory.createFieldFromText(element.text, clazz)
-                is PsiClass -> factory.createClassFromText(element.text, clazz).innerClasses.first()
+                is PsiMethod -> factory.createMethodFromText(element.text, element.context)
+                is PsiEnumConstant -> factory.createEnumConstantFromText(element.text, element.context)
+                is PsiField -> factory.createFieldFromText(element.text, element.context)
+                is PsiClass -> factory.createClassFromText(element.text, element.context).innerClasses.first()
                 else -> throw RuntimeException()
             }
         }
