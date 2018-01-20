@@ -5,8 +5,6 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
-import com.intellij.psi.search.ProjectScope
-import com.intellij.psi.search.searches.AllClassesSearch
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 
@@ -45,10 +43,14 @@ class Transformer(private val project: Project) {
     }
 
     fun perform() {
-        val appropriateFiles = getAppropriateFiles()
+        val files = getFiles()
+        removeComments(files)
+
+        val appropriateFiles = getAppropriateFiles(files)
         val sampleFiles = getRandomSample(appropriateFiles)
 
         for (file in sampleFiles) {
+            file.refresh(false, false)
             file.copy(this, originalSubdirectory, file.name)
         }
 
@@ -62,15 +64,52 @@ class Transformer(private val project: Project) {
         }
     }
 
-    private fun getAppropriateFiles() : List<VirtualFile> {
+    private fun getFiles() : List<VirtualFile> {
         val result: MutableList<VirtualFile> = mutableListOf()
 
         ProjectFileIndex.SERVICE.getInstance(project).iterateContent {
-            if (FileChecker.isAppropriate(it)) {
+            if (FileChecker.isProbablyAppropriate(it)) {
                 result.add(it)
             }
 
-            return@iterateContent true
+            true
+        }
+
+        return result
+    }
+
+    private fun removeComments(files: List<VirtualFile>) {
+        files.forEach {
+            val psiFile = PsiManager.getInstance(project).findFile(it)
+            if (psiFile == null || !(psiFile is PsiJavaFile)) {
+                return@forEach
+            }
+
+            log.write("file to delete comments: $it")
+
+            val comments = mutableListOf<PsiComment>()
+            object : JavaRecursiveElementVisitor() {
+                override fun visitComment(comment: PsiComment?) {
+                    super.visitComment(comment)
+
+                    log.write("comment $comment")
+                    if (comment != null) {
+                        comments.add(comment)
+                    }
+                }
+            }.visitElement(psiFile)
+
+            comments.forEach { it.delete() }
+        }
+    }
+
+    private fun getAppropriateFiles(files: List<VirtualFile>) : List<VirtualFile> {
+        val result: MutableList<VirtualFile> = mutableListOf()
+
+        files.forEach {
+            if (FileChecker.isAppropriate(it)) {
+                result.add(it)
+            }
         }
 
         log.write("${result.size} good java files detected")
@@ -100,17 +139,9 @@ class Transformer(private val project: Project) {
         log.write(file.toString())
 
         object : JavaRecursiveElementVisitor() {
-            override fun visitAnonymousClass(aClass: PsiAnonymousClass) {
-                super.visitAnonymousClass(aClass)
-                processClass(aClass)
-            }
-
             override fun visitClass(aClass: PsiClass) {
                 super.visitClass(aClass)
-                processClass(aClass)
-            }
 
-            private fun processClass(aClass: PsiClass) {
                 log.write(aClass.toString())
                 transformClass(aClass)
             }
