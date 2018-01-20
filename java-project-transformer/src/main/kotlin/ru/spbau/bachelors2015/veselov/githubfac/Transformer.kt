@@ -4,9 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.PsiElement
-import com.intellij.psi.PsiManager
-import com.intellij.psi.PsiRecursiveElementWalkingVisitor
+import com.intellij.psi.*
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 
@@ -52,15 +50,13 @@ class Transformer(private val project: Project) {
             file.copy(this, originalSubdirectory, file.name)
         }
 
-        // TODO: experimental
         for (file in sampleFiles) {
             val psiFile = PsiManager.getInstance(project).findFile(file)
-            psiFile?.accept(object : PsiRecursiveElementWalkingVisitor() {
-                override fun visitElement(element: PsiElement) {
-                    super.visitElement(element)
-                    log.write(element.toString())
-                }
-            })
+            if (psiFile == null || !(psiFile is PsiJavaFile)) {
+                throw RuntimeException()
+            }
+
+            transformFile(psiFile)
         }
     }
 
@@ -87,7 +83,8 @@ class Transformer(private val project: Project) {
         val list = files.toMutableList()
         shuffle(list)
 
-        val result = list.take(10)
+        // val result = list.take(1) // todo: 10?
+        val result = list.filter { it.nameWithoutExtension == "EntityDamageEvent" }
 
         log.write("${result.size} files in sample")
         for (file in result) {
@@ -95,5 +92,46 @@ class Transformer(private val project: Project) {
         }
 
         return result
+    }
+
+    private fun transformFile(file: PsiJavaFile) {
+        log.write(file.toString())
+
+        for (clazz: PsiClass in file.classes) {
+            transformClass(clazz)
+        }
+    }
+
+    private fun transformClass(clazz: PsiClass) {
+        log.write(clazz.toString())
+
+        val anchor = clazz.lBrace
+        val children = (
+            clazz.methods.toList() as List<PsiElement> +
+            clazz.fields +
+            clazz.innerClasses
+        ).toMutableList()
+
+        fun copyPsiElement(element: PsiElement) : PsiElement {
+            val factory = JavaPsiFacade.getInstance(project).elementFactory
+
+            return when (element) {
+                is PsiMethod -> factory.createMethodFromText(element.text, clazz)
+                is PsiField -> factory.createFieldFromText(element.text, clazz)
+                is PsiClass -> factory.createClassFromText(element.text, clazz).innerClasses.first()
+                else -> throw RuntimeException()
+            }
+        }
+
+        val newChildren: MutableList<PsiElement> =
+                children.map { copyPsiElement(it) }.toMutableList()
+
+        children.forEach { it.delete() }
+
+        shuffle(newChildren)
+        newChildren.forEach {
+            log.write(it.toString())
+            clazz.addAfter(it, anchor)
+        }
     }
 }
