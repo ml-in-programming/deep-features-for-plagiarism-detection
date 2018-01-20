@@ -98,12 +98,21 @@ class Transformer(private val project: Project) {
         log.write(file.toString())
 
         for (clazz: PsiClass in file.classes) {
+            log.write(clazz.toString())
             transformClass(clazz)
         }
     }
 
     private fun transformClass(clazz: PsiClass) {
-        log.write(clazz.toString())
+        for (innerClass in clazz.innerClasses) {
+            transformClass(innerClass)
+        }
+
+        if (clazz.isEnum) {
+            for (f in clazz.fields) {
+                log.write(f.toString())
+            }
+        }
 
         val anchor = clazz.lBrace
         val children = (
@@ -117,6 +126,7 @@ class Transformer(private val project: Project) {
 
             return when (element) {
                 is PsiMethod -> factory.createMethodFromText(element.text, clazz)
+                is PsiEnumConstant -> factory.createEnumConstantFromText(element.text, clazz)
                 is PsiField -> factory.createFieldFromText(element.text, clazz)
                 is PsiClass -> factory.createClassFromText(element.text, clazz).innerClasses.first()
                 else -> throw RuntimeException()
@@ -130,7 +140,6 @@ class Transformer(private val project: Project) {
 
         shuffle(newChildren)
         newChildren.forEach {
-            log.write(it.toString())
             clazz.addAfter(it, anchor)
         }
     }
