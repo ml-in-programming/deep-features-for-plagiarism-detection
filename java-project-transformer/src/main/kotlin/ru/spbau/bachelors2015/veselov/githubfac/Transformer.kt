@@ -1,5 +1,6 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -50,8 +51,9 @@ class Transformer(private val project: Project) {
         val sampleFiles = getRandomSample(appropriateFiles)
 
         for (file in sampleFiles) {
-            file.refresh(false, false)
-            file.copy(this, originalSubdirectory, file.name)
+            val copy = originalSubdirectory.createChildData(this, file.name)
+            val document = FileDocumentManager.getInstance().getDocument(copy)
+            document!!.setText(PsiManager.getInstance(project).findFile(file)!!.text)
         }
 
         for (file in sampleFiles) {
@@ -85,14 +87,11 @@ class Transformer(private val project: Project) {
                 return@forEach
             }
 
-            log.write("file to delete comments: $it")
-
             val comments = mutableListOf<PsiComment>()
             object : JavaRecursiveElementVisitor() {
                 override fun visitComment(comment: PsiComment?) {
                     super.visitComment(comment)
 
-                    log.write("comment $comment")
                     if (comment != null) {
                         comments.add(comment)
                     }

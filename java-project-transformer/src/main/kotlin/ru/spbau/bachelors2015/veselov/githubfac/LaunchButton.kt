@@ -20,7 +20,7 @@ class LaunchButton : AnAction() {
 
             return
         }
-
+        
         WriteCommandAction.runWriteCommandAction(project, {
             Transformer(project).perform()
         })
