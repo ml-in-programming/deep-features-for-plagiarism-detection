@@ -2,18 +2,11 @@ package ru.spbau.bachelors2015.veselov.githubfac
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.JavaRecursiveElementVisitor
-import com.intellij.psi.PsiComment
-import com.intellij.psi.PsiJavaFile
-import com.intellij.psi.PsiManager
+import com.intellij.psi.*
 
 class Cleaner(private val project: Project) {
+    // todo: modify to delete string literals
     fun clean(files: List<VirtualFile>) {
-        removeComments(files)
-    }
-
-    private fun removeComments(files: List<VirtualFile>) {
-        // todo: modify to delete string literals
         files.forEach {
             val psiFile = PsiManager.getInstance(project).findFile(it)
             if (psiFile == null || !(psiFile is PsiJavaFile)) {
@@ -21,6 +14,8 @@ class Cleaner(private val project: Project) {
             }
 
             val comments = mutableListOf<PsiComment>()
+            val literals = mutableListOf<PsiLiteralExpression>()
+
             object : JavaRecursiveElementVisitor() {
                 override fun visitComment(comment: PsiComment?) {
                     super.visitComment(comment)
@@ -29,9 +24,26 @@ class Cleaner(private val project: Project) {
                         comments.add(comment)
                     }
                 }
+
+                override fun visitLiteralExpression(expression: PsiLiteralExpression?) {
+                    super.visitLiteralExpression(expression)
+
+                    if (expression != null) {
+                        literals.add(expression)
+                    }
+                }
             }.visitElement(psiFile)
 
             comments.forEach { it.delete() }
+
+            literals.forEach {
+                val value = it.value
+                if (value is String) {
+                    val factory = JavaPsiFacade.getInstance(project).elementFactory
+                    val replacement = factory.createExpressionFromText("\"\"", it.context)
+                    it.replace(replacement)
+                }
+            }
         }
     }
 }

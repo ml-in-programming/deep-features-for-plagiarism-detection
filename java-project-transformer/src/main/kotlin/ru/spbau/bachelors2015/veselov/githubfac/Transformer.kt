@@ -4,7 +4,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import java.util.*
 
-class Transformer(val project: Project) {
+class Transformer(private val project: Project) {
     fun transformFile(file: PsiJavaFile) {
         Log.write(file.toString())
 
