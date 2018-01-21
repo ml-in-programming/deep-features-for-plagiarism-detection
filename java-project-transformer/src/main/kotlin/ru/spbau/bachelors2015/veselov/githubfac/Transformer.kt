@@ -2,23 +2,17 @@ package ru.spbau.bachelors2015.veselov.githubfac
 
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
-import java.util.*
+import com.intellij.refactoring.RefactoringFactory
 
 class Transformer(private val project: Project) {
     fun transformFile(file: PsiJavaFile) {
         Log.write(file.toString())
 
-        object : JavaRecursiveElementVisitor() {
-            override fun visitClass(aClass: PsiClass) {
-                super.visitClass(aClass)
-
-                Log.write(aClass.toString())
-                transformClass(aClass)
-            }
-        }.visitElement(file)
+        // shuffleInnerClasses(file) todo
+        renameIdentifiers(file)
     }
 
-    fun transformClass(clazz: PsiClass) {
+    fun shuffleClass(clazz: PsiClass) {
         val anchor = clazz.lBrace
         val children = (
                 clazz.methods.toList() as List<PsiElement> +
@@ -43,9 +37,59 @@ class Transformer(private val project: Project) {
 
         children.forEach { it.delete() }
 
-        Collections.shuffle(newChildren)
+        newChildren.shuffle()
         newChildren.forEach {
             clazz.addAfter(it, anchor)
+        }
+    }
+
+    private fun shuffleInnerClasses(file: PsiJavaFile) {
+        object : JavaRecursiveElementVisitor() {
+            override fun visitClass(aClass: PsiClass) {
+                super.visitClass(aClass)
+
+                Log.write(aClass.toString())
+                shuffleClass(aClass)
+            }
+        }.visitElement(file)
+    }
+
+    private fun renameIdentifiers(file: PsiJavaFile) {
+        val namedElements = mutableSetOf<PsiNamedElement>()
+
+        object : JavaRecursiveElementVisitor() {
+            override fun visitElement(element: PsiElement?) {
+                super.visitElement(element)
+
+                if (element === file) {
+                    return
+                }
+
+                if (element is PsiNamedElement) {
+                    namedElements.add(element)
+                    return
+                }
+
+                if (element is PsiJavaCodeReferenceElement) {
+                    val namedElement = element.advancedResolve(false).element
+                    if (namedElement != null) {
+                        Log.write("$namedElement is referenced")
+
+                        if (namedElement !is PsiPackage && namedElement.isWritable) {
+                            namedElements.add(namedElement as PsiNamedElement)
+                        }
+                    }
+                }
+            }
+        }.visitElement(file)
+
+        var ctr = 0
+        namedElements.forEach {
+            val refactoring =
+                    RefactoringFactory.getInstance(project)
+                            .createRename(it, "name${ctr++}")
+
+            refactoring.doRefactoring(refactoring.findUsages())
         }
     }
 }

@@ -5,7 +5,6 @@ import com.intellij.openapi.vfs.VirtualFile
 import com.intellij.psi.*
 
 class Cleaner(private val project: Project) {
-    // todo: modify to delete string literals
     fun clean(files: List<VirtualFile>) {
         files.forEach {
             val psiFile = PsiManager.getInstance(project).findFile(it)
