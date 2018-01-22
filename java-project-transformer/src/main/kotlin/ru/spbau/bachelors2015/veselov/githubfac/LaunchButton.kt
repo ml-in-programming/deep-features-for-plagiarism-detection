@@ -22,7 +22,7 @@ class LaunchButton : AnAction() {
         }
 
         WriteCommandAction.runWriteCommandAction(project, {
-            Plugin(project).perform()
+            Plugin(project).run()
         })
     }
 }

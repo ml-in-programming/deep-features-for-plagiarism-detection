@@ -3,8 +3,11 @@ package ru.spbau.bachelors2015.veselov.githubfac
 import com.intellij.openapi.project.Project
 import com.intellij.psi.*
 import com.intellij.refactoring.RefactoringFactory
+import ru.spbau.bachelors2015.veselov.githubfac.identifiers.IdentifiersProducer
 
 class Transformer(private val project: Project) {
+    private val identifierProducer = IdentifiersProducer(project)
+
     fun transformFile(file: PsiJavaFile) {
         Log.write(file.toString())
 
@@ -16,9 +19,9 @@ class Transformer(private val project: Project) {
         val anchor = clazz.lBrace
         val children = (
             clazz.methods.toList() as List<PsiElement> +
-                    clazz.fields +
-                    clazz.innerClasses
-            ).toMutableList()
+            clazz.fields +
+            clazz.innerClasses
+        ).toMutableList()
 
         fun copyPsiElement(element: PsiElement) : PsiElement {
             val factory = JavaPsiFacade.getInstance(project).elementFactory
@@ -77,8 +80,7 @@ class Transformer(private val project: Project) {
             }
         }.visitElement(file)
 
-        var ctr = 0
-        namedElements.filter {
+        val elementsToRename = namedElements.filter {
             if (it === file) {
                 return@filter false
             }
@@ -88,12 +90,24 @@ class Transformer(private val project: Project) {
             }
 
             return@filter true
-        }.forEach {
+        }
+
+        elementsToRename.zip(identifierProducer.produce(elementsToRename.size)).forEach {
+            (element, newIdentifier) ->
+            val oldName = element.name
+            val newName = if (oldName != null) {
+                newIdentifier.toSameNotationAs(oldName)
+            } else {
+                newIdentifier.toBigCamelNotation()
+            }
+
+
             val refactoring =
                     RefactoringFactory.getInstance(project)
-                            .createRename(it, "name${ctr++}")
+                                      .createRename(element, newName)
 
             refactoring.doRefactoring(refactoring.findUsages())
+
         }
     }
 }

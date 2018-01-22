@@ -46,32 +46,18 @@ class Plugin(private val project: Project) {
         )
     }
 
-    fun perform() {
-        val files = fileObtainer.getFiles()
+    fun run() {
+        val files = fileObtainer.getAllJavaFiles().filter { isProbablyAppropriate(it) }
         cleaner.clean(files)
 
-        val appropriateFiles = getAppropriateFiles(files)
+        val appropriateFiles = files.filter { isAppropriate(it) }
+        Log.write("${appropriateFiles.size} good java files detected")
+        appropriateFiles.forEach { Log.write(it.path) }
+
         val sampleFiles = getRandomSample(appropriateFiles)
 
         copyFilesToOriginal(sampleFiles)
         transformFiles(sampleFiles)
-    }
-
-    private fun getAppropriateFiles(files: List<VirtualFile>) : List<VirtualFile> {
-        val result: MutableList<VirtualFile> = mutableListOf()
-
-        files.forEach {
-            if (isAppropriate(it)) {
-                result.add(it)
-            }
-        }
-
-        Log.write("${result.size} good java files detected")
-        for (file in result) {
-            Log.write(file.path)
-        }
-
-        return result
     }
 
     private fun getRandomSample(files: List<VirtualFile>) : List<VirtualFile> {
@@ -104,6 +90,12 @@ class Plugin(private val project: Project) {
 
             transformer.transformFile(psiFile)
         }
+    }
+
+    private fun isProbablyAppropriate(file: VirtualFile) : Boolean {
+        val document = FileDocumentManager.getInstance().getDocument(file)
+
+        return document != null && linesOfCode(document) >= lowerBoundOnLOC
     }
 
     private fun isAppropriate(file: VirtualFile) : Boolean {
