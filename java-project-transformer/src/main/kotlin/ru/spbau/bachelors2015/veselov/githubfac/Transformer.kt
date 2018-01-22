@@ -8,17 +8,17 @@ class Transformer(private val project: Project) {
     fun transformFile(file: PsiJavaFile) {
         Log.write(file.toString())
 
-        // shuffleInnerClasses(file) todo
+        // shuffleClasses(file) todo
         renameIdentifiers(file)
     }
 
     fun shuffleClass(clazz: PsiClass) {
         val anchor = clazz.lBrace
         val children = (
-                clazz.methods.toList() as List<PsiElement> +
-                        clazz.fields +
-                        clazz.innerClasses
-                ).toMutableList()
+            clazz.methods.toList() as List<PsiElement> +
+                    clazz.fields +
+                    clazz.innerClasses
+            ).toMutableList()
 
         fun copyPsiElement(element: PsiElement) : PsiElement {
             val factory = JavaPsiFacade.getInstance(project).elementFactory
@@ -43,7 +43,7 @@ class Transformer(private val project: Project) {
         }
     }
 
-    private fun shuffleInnerClasses(file: PsiJavaFile) {
+    private fun shuffleClasses(file: PsiJavaFile) {
         object : JavaRecursiveElementVisitor() {
             override fun visitClass(aClass: PsiClass) {
                 super.visitClass(aClass)
@@ -61,10 +61,6 @@ class Transformer(private val project: Project) {
             override fun visitElement(element: PsiElement?) {
                 super.visitElement(element)
 
-                if (element === file) {
-                    return
-                }
-
                 if (element is PsiNamedElement) {
                     namedElements.add(element)
                     return
@@ -73,8 +69,6 @@ class Transformer(private val project: Project) {
                 if (element is PsiJavaCodeReferenceElement) {
                     val namedElement = element.advancedResolve(false).element
                     if (namedElement != null) {
-                        Log.write("$namedElement is referenced")
-
                         if (namedElement !is PsiPackage && namedElement.isWritable) {
                             namedElements.add(namedElement as PsiNamedElement)
                         }
@@ -84,7 +78,17 @@ class Transformer(private val project: Project) {
         }.visitElement(file)
 
         var ctr = 0
-        namedElements.forEach {
+        namedElements.filter {
+            if (it === file) {
+                return@filter false
+            }
+
+            if (it is PsiMethod && it.isConstructor) {
+                return@filter false
+            }
+
+            return@filter true
+        }.forEach {
             val refactoring =
                     RefactoringFactory.getInstance(project)
                             .createRename(it, "name${ctr++}")
