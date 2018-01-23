@@ -10,7 +10,7 @@ buildscript {
 }
 
 plugins {
-    id "org.jetbrains.intellij" version "0.2.5"
+    id "org.jetbrains.intellij" version "0.2.17"
 }
 
 group 'ru.spbau.bachelors2015.veselov.githubfac'
@@ -21,10 +21,18 @@ apply plugin: 'kotlin'
 
 intellij {
     version 'IC-2017.1'
-    pluginName 'intellij-batch'
+    pluginName 'project-transformer'
 }
 
 sourceCompatibility = 1.8
+
+task runConsole(dependsOn: runIde) {}
+
+gradle.taskGraph.whenReady { graph ->
+    if (graph.hasTask(runConsole)) {
+        runIde.args 'transform'
+    }
+}
 
 
 repositories {

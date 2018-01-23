@@ -25,6 +25,7 @@
     -->
 
     <extensions defaultExtensionNs="com.intellij">
+        <appStarter implementation="ru.spbau.bachelors2015.veselov.githubfac.Starter"/>
     </extensions>
 
     <actions>
