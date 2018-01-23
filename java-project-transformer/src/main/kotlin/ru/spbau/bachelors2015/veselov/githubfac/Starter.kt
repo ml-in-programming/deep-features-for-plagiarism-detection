@@ -1,19 +1,60 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
+import com.intellij.ide.impl.PatchProjectUtil
+import com.intellij.ide.impl.ProjectUtil
+import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ApplicationStarter
+import com.intellij.openapi.application.ex.ApplicationEx
+import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.vfs.VirtualFileManager
+import java.io.File
 
 class Starter : ApplicationStarter {
+    private var projectFolderPath: String = ""
+
     override fun getCommandName(): String {
         return "transform"
     }
 
     override fun premain(args: Array<out String>?) {
-        Log.write(args!!.get(0))
-        Log.write(args.get(1))
-        System.exit(0)
+        if (args == null || args.size != 2) {
+            System.err.println("Invalid number of arguments!")
+            System.exit(1)
+            return
+        }
+
+        projectFolderPath = File(args[1]).absolutePath.replace(File.separatorChar, '/')
     }
 
     override fun main(args: Array<out String>?) {
-        TODO("not implemented")
+        val application = ApplicationManager.getApplication() as ApplicationEx
+        // application.doNotSave()
+
+        val project = ProjectUtil.openOrImport(
+            projectFolderPath,
+            null,
+            false
+        )
+
+        if (project == null) {
+            Log.write("Unable to open project: $projectFolderPath")
+            System.exit(1)
+            return
+        }
+
+        application.runWriteAction {
+            VirtualFileManager.getInstance()
+                              .refreshWithoutFileWatcher(false)
+        }
+
+        PatchProjectUtil.patchProject(project)
+
+        Log.write("Project $projectFolderPath is opened")
+
+        WriteCommandAction.runWriteCommandAction(project, {
+            TransformationManager(project).run()
+        })
+
+        application.exit(true, true)
     }
 }

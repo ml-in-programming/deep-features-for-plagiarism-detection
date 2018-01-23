@@ -107,7 +107,6 @@ class Transformer(private val project: Project) {
                                       .createRename(element, newName)
 
             refactoring.doRefactoring(refactoring.findUsages())
-
         }
     }
 }

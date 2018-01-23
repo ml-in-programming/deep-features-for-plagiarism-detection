@@ -8,7 +8,7 @@ import com.intellij.psi.*
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 
-class Plugin(private val project: Project) {
+class TransformationManager(private val project: Project) {
     private var transformationDirectory: VirtualFile
 
     private var originalSubdirectory: VirtualFile
