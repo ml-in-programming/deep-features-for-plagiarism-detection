@@ -9,6 +9,7 @@ class Starter : ApplicationStarter {
 
     override fun premain(args: Array<out String>?) {
         Log.write(args!!.get(0))
+        Log.write(args.get(1))
         System.exit(0)
     }
 

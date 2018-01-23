@@ -30,7 +30,7 @@ task runConsole(dependsOn: runIde) {}
 
 gradle.taskGraph.whenReady { graph ->
     if (graph.hasTask(runConsole)) {
-        runIde.args 'transform'
+        runIde.args 'transform', "$projectFolder"
     }
 }
 
