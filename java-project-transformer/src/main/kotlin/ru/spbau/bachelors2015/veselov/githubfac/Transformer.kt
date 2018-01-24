@@ -1,5 +1,6 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
@@ -13,8 +14,18 @@ class Transformer(private val project: Project) {
     fun transformFile(file: PsiJavaFile) {
         Log.write(file.toString())
 
-        // shuffleClasses(file) todo
+        shuffleClasses(file)
         renameIdentifiers(file)
+
+        file.importList?.let { shuffleImports(it) }
+    }
+
+    fun shuffleImports(importList: PsiImportList) {
+        WriteCommandAction.runWriteCommandAction(project) {
+            for (importStatement in importList.allImportStatements) {
+                importStatement.delete()
+            }
+        }
     }
 
     fun shuffleClass(clazz: PsiClass) {
@@ -40,11 +51,15 @@ class Transformer(private val project: Project) {
         val newChildren: MutableList<PsiElement> =
                 children.map { copyPsiElement(it) }.toMutableList()
 
-        children.forEach { it.delete() }
+        WriteCommandAction.runWriteCommandAction(project) {
+            children.forEach { it.delete() }
+        }
 
         newChildren.shuffle()
-        newChildren.forEach {
-            clazz.addAfter(it, anchor)
+        WriteCommandAction.runWriteCommandAction(project) {
+            newChildren.forEach {
+                clazz.addAfter(it, anchor)
+            }
         }
     }
 

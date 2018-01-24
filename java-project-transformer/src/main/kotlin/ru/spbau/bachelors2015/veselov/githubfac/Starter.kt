@@ -53,6 +53,7 @@ class Starter : ApplicationStarter {
             TransformationManager(project).run()
         } catch (e: Throwable) {
             Log.err("Exception occurred: $e")
+            e.printStackTrace()
         }
 
         application.exit(true, true)
