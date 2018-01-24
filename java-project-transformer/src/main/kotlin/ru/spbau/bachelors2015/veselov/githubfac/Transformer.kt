@@ -1,6 +1,8 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
+import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.Computable
 import com.intellij.psi.*
 import com.intellij.refactoring.RefactoringFactory
 import ru.spbau.bachelors2015.veselov.githubfac.identifiers.IdentifiersProducer
@@ -70,7 +72,14 @@ class Transformer(private val project: Project) {
                 }
 
                 if (element is PsiJavaCodeReferenceElement) {
-                    val namedElement = element.advancedResolve(false).element
+                    val namedElement =
+                        DumbService.getInstance(project)
+                                   .runReadActionInSmartMode(
+                                           Computable {
+                                               element.advancedResolve(false).element
+                                           }
+                                   )
+
                     if (namedElement != null) {
                         if (namedElement !is PsiPackage && namedElement.isWritable) {
                             namedElements.add(namedElement as PsiNamedElement)
@@ -95,6 +104,7 @@ class Transformer(private val project: Project) {
         elementsToRename.zip(identifierProducer.produce(elementsToRename.size)).forEach {
             (element, newIdentifier) ->
             val oldName = element.name
+
             val newName = if (oldName != null) {
                 newIdentifier.toSameNotationAs(oldName)
             } else {
