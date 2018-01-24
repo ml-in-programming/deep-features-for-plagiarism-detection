@@ -1,5 +1,7 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
@@ -11,9 +13,9 @@ import java.util.Collections.shuffle
 class TransformationManager(private val project: Project) {
     private var transformationDirectory: VirtualFile
 
-    private var originalSubdirectory: VirtualFile
+    private val originalSubdirectory: VirtualFile
 
-    private var transformedSubdirectory: VirtualFile
+    private val transformedSubdirectory: VirtualFile
 
     private val cleaner = Cleaner(project)
 
@@ -28,22 +30,30 @@ class TransformationManager(private val project: Project) {
             Paths.get(project.baseDir.canonicalPath).resolve(transformationName).toFile()
         )
 
-        existedDir?.delete(this)
+        ApplicationManager.getApplication().runWriteAction {
+            existedDir?.delete(this)
+        }
 
-        transformationDirectory = project.baseDir.createChildDirectory(
-            this,
-            transformationName
-        )
+        transformationDirectory =
+                TransformationManager.createRootChildFolder(
+                    project,
+                    project.baseDir,
+                    transformationName
+                )
 
-        originalSubdirectory = transformationDirectory.createChildDirectory(
-            this,
-            "original"
-        )
+        originalSubdirectory =
+                TransformationManager.createRootChildFolder(
+                    project,
+                    transformationDirectory,
+                    "original"
+                )
 
-        transformedSubdirectory = transformationDirectory.createChildDirectory(
-            this,
-            "transformed"
-        )
+        transformedSubdirectory =
+                TransformationManager.createRootChildFolder(
+                    project,
+                    transformationDirectory,
+                    "transformed"
+                )
     }
 
     fun run() {
@@ -84,7 +94,7 @@ class TransformationManager(private val project: Project) {
     private fun transformFiles(files: List<VirtualFile>) {
         for (file in files) {
             val psiFile = PsiManager.getInstance(project).findFile(file)
-            if (psiFile == null || !(psiFile is PsiJavaFile)) {
+            if (psiFile == null || psiFile !is PsiJavaFile) {
                 throw RuntimeException()
             }
 
@@ -102,5 +112,21 @@ class TransformationManager(private val project: Project) {
         val document = FileDocumentManager.getInstance().getDocument(file)
 
         return document != null // todo: && linesOfCode(document) in 400..800
+    }
+
+    private object TransformationManager {
+        fun createRootChildFolder(
+            project: Project,
+            baseDir: VirtualFile,
+            name: String
+        ) : VirtualFile {
+            var result: VirtualFile? = null
+
+            ApplicationManager.getApplication().runWriteAction {
+                result = baseDir.createChildDirectory(this, name)
+            }
+
+            return result!!
+        }
     }
 }

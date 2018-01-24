@@ -4,6 +4,7 @@ buildscript {
     repositories {
         mavenCentral()
     }
+
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
@@ -31,6 +32,7 @@ task runConsole(dependsOn: runIde) {}
 gradle.taskGraph.whenReady { graph ->
     if (graph.hasTask(runConsole)) {
         runIde.args 'transform', "$projectFolder"
+        runIde.jvmArgs '-Djava.awt.headless=true'
     }
 }
 

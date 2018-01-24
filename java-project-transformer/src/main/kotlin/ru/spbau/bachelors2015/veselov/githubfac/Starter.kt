@@ -5,7 +5,6 @@ import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ApplicationStarter
 import com.intellij.openapi.application.ex.ApplicationEx
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.vfs.VirtualFileManager
 import java.io.File
 
@@ -28,32 +27,33 @@ class Starter : ApplicationStarter {
 
     override fun main(args: Array<out String>?) {
         val application = ApplicationManager.getApplication() as ApplicationEx
-        // application.doNotSave()
 
-        val project = ProjectUtil.openOrImport(
-            projectFolderPath,
-            null,
-            false
-        )
+        try {
+            // application.doNotSave()
+            val project = ProjectUtil.openOrImport(
+                projectFolderPath,
+                null,
+                false
+            )
 
-        if (project == null) {
-            Log.write("Unable to open project: $projectFolderPath")
-            System.exit(1)
-            return
-        }
+            if (project == null) {
+                Log.write("Unable to open project: $projectFolderPath")
+                System.exit(1)
+                return
+            }
 
-        application.runWriteAction {
-            VirtualFileManager.getInstance()
-                              .refreshWithoutFileWatcher(false)
-        }
+            application.runWriteAction {
+                VirtualFileManager.getInstance()
+                                  .refreshWithoutFileWatcher(false)
+            }
 
-        PatchProjectUtil.patchProject(project)
+            PatchProjectUtil.patchProject(project)
 
-        Log.write("Project $projectFolderPath is opened")
-
-        WriteCommandAction.runWriteCommandAction(project, {
+            Log.write("Project $projectFolderPath is opened")
             TransformationManager(project).run()
-        })
+        } catch (e: Throwable) {
+            Log.err("Exception occurred: $e")
+        }
 
         application.exit(true, true)
     }
