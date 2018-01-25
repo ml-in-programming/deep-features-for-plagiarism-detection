@@ -29,7 +29,7 @@ class Starter : ApplicationStarter {
         val application = ApplicationManager.getApplication() as ApplicationEx
 
         try {
-            // application.doNotSave()
+            application.doNotSave()
             val project = ProjectUtil.openOrImport(
                 projectFolderPath,
                 null,

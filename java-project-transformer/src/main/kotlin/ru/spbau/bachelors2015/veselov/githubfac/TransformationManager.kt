@@ -1,12 +1,12 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
 import com.intellij.openapi.application.ApplicationManager
-import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.vfs.LocalFileSystem
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.psi.*
+import com.intellij.psi.PsiJavaFile
+import com.intellij.psi.PsiManager
 import java.nio.file.Paths
 import java.util.Collections.shuffle
 

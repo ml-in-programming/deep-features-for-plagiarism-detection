@@ -67,8 +67,6 @@ class Transformer(private val project: Project) {
         object : JavaRecursiveElementVisitor() {
             override fun visitClass(aClass: PsiClass) {
                 super.visitClass(aClass)
-
-                Log.write(aClass.toString())
                 shuffleClass(aClass)
             }
         }.visitElement(file)
@@ -90,15 +88,17 @@ class Transformer(private val project: Project) {
                     val namedElement =
                         DumbService.getInstance(project)
                                    .runReadActionInSmartMode(
-                                           Computable {
-                                               element.advancedResolve(false).element
-                                           }
+                                       Computable {
+                                           element.advancedResolve(false).element
+                                       }
                                    )
 
                     if (namedElement != null) {
                         if (namedElement !is PsiPackage && namedElement.isWritable) {
                             namedElements.add(namedElement as PsiNamedElement)
                         }
+                    } else {
+                        throw RuntimeException("Failed to resolve reference to ${element.qualifiedName}")
                     }
                 }
             }
