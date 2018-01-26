@@ -11,6 +11,8 @@ import ru.spbau.bachelors2015.veselov.githubfac.identifiers.IdentifiersProducer
 class Transformer(private val project: Project) {
     private val identifierProducer = IdentifiersProducer(project)
 
+    private val factory = JavaPsiFacade.getInstance(project).elementFactory
+
     fun transformFile(file: PsiJavaFile) {
         Log.write(file.toString())
 
@@ -21,9 +23,38 @@ class Transformer(private val project: Project) {
     }
 
     fun shuffleImports(importList: PsiImportList) {
+        val imports = mutableListOf<PsiImportStatementBase>()
+
         WriteCommandAction.runWriteCommandAction(project) {
             for (importStatement in importList.allImportStatements) {
+                val element = importStatement.resolve()
+                if (importStatement is PsiImportStaticStatement) {
+                    imports.add(
+                        factory.createImportStaticStatement(
+                            importStatement.resolveTargetClass()!!,
+                            (element as PsiNamedElement).name!!
+                        )
+                    )
+                } else {
+                    when (element) {
+                        is PsiPackage -> imports.add(factory.createImportStatementOnDemand(element.qualifiedName))
+                        is PsiClass -> imports.add(factory.createImportStatement(element))
+                        else -> throw RuntimeException("Unable to resolve import")
+                    }
+                }
+
                 importStatement.delete()
+            }
+        }
+
+        imports.shuffle()
+        WriteCommandAction.runWriteCommandAction(project) {
+            for (i in imports.indices) {
+                if (i == 0) {
+                    importList.add(imports[i])
+                } else {
+                    importList.addAfter(imports[i], imports[i - 1])
+                }
             }
         }
     }
@@ -37,8 +68,6 @@ class Transformer(private val project: Project) {
         ).toMutableList()
 
         fun copyPsiElement(element: PsiElement) : PsiElement {
-            val factory = JavaPsiFacade.getInstance(project).elementFactory
-
             return when (element) {
                 is PsiMethod -> factory.createMethodFromText(element.text, element.context)
                 is PsiEnumConstant -> factory.createEnumConstantFromText(element.text, element.context)
@@ -131,7 +160,9 @@ class Transformer(private val project: Project) {
                     RefactoringFactory.getInstance(project)
                                       .createRename(element, newName)
 
-            refactoring.doRefactoring(refactoring.findUsages())
+            WriteCommandAction.runWriteCommandAction(project) {
+                refactoring.doRefactoring(refactoring.findUsages())
+            }
         }
     }
 }

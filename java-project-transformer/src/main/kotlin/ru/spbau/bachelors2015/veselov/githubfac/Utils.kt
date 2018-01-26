@@ -13,9 +13,15 @@ fun linesOfCode(document: Document) : Int {
 }
 
 // todo: looks very odd
-fun copyFileTo(directory: VirtualFile, file: VirtualFile, project: Project, requestor: Any) {
+fun copyFileContentTo(
+    directory: VirtualFile,
+    file: VirtualFile,
+    newName: String,
+    project: Project,
+    requestor: Any
+) {
     ApplicationManager.getApplication().runWriteAction {
-        val copy = directory.createChildData(requestor, file.name)
+        val copy = directory.createChildData(requestor, newName)
         val document = FileDocumentManager.getInstance().getDocument(copy)
         document!!.setText(PsiManager.getInstance(project).findFile(file)!!.text)
     }

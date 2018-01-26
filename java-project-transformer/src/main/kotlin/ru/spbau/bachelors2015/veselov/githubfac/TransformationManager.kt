@@ -57,7 +57,8 @@ class TransformationManager(private val project: Project) {
     }
 
     fun run() {
-        val files = fileObtainer.getAllJavaFiles().filter { isProbablyAppropriate(it) }
+        val allFiles = fileObtainer.getAllJavaFiles()
+        val files = allFiles.filter { isProbablyAppropriate(it) }
         cleaner.clean(files)
 
         val appropriateFiles = files.filter { isAppropriate(it) }
@@ -86,19 +87,22 @@ class TransformationManager(private val project: Project) {
     }
 
     private fun copyFilesToOriginal(files: List<VirtualFile>) {
-        for (file in files) {
-            copyFileTo(originalSubdirectory, file, project, this)
+        files.zip(1..files.size).forEach {
+            (file, id) ->
+            copyFileContentTo(originalSubdirectory, file, "$id.java", project, this)
         }
     }
 
     private fun transformFiles(files: List<VirtualFile>) {
-        for (file in files) {
+        files.zip(1..files.size).forEach {
+            (file, id) ->
             val psiFile = PsiManager.getInstance(project).findFile(file)
             if (psiFile == null || psiFile !is PsiJavaFile) {
                 throw RuntimeException()
             }
 
             transformer.transformFile(psiFile)
+            copyFileContentTo(transformedSubdirectory, file, "$id.java", project, this)
         }
     }
 

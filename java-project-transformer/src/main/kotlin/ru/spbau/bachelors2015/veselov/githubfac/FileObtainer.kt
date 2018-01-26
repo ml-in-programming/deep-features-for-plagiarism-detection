@@ -5,11 +5,11 @@ import com.intellij.openapi.roots.ProjectFileIndex
 import com.intellij.openapi.vfs.VirtualFile
 
 class FileObtainer(private val project: Project) {
-    fun getAllJavaFiles() : List<VirtualFile> {
+    fun getAllFiles() : List<VirtualFile> {
         val result: MutableList<VirtualFile> = mutableListOf()
 
         ProjectFileIndex.SERVICE.getInstance(project).iterateContent {
-            if (isJavaFile(it)) {
+            if (!it.isDirectory) {
                 result.add(it)
             }
 
@@ -17,6 +17,10 @@ class FileObtainer(private val project: Project) {
         }
 
         return result
+    }
+
+    fun getAllJavaFiles() : List<VirtualFile> {
+        return getAllFiles().filter { isJavaFile(it) }
     }
 
     private fun isJavaFile(file: VirtualFile) : Boolean {
