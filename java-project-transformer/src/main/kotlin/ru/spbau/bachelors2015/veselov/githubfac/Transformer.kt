@@ -1,6 +1,7 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.project.DumbService
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.Computable
@@ -23,39 +24,27 @@ class Transformer(private val project: Project) {
     }
 
     fun shuffleImports(importList: PsiImportList) {
-        val imports = mutableListOf<PsiImportStatementBase>()
+        val importsText: String =
+                importList.allImportStatements.map {
+                    it.text
+                }.shuffled().joinToString("\n", "", "\n\n")
+
+        val startOffset = importList.allImportStatements.map {
+            it.node.startOffset
+        }.min() ?: return
 
         WriteCommandAction.runWriteCommandAction(project) {
-            for (importStatement in importList.allImportStatements) {
-                val element = importStatement.resolve()
-                if (importStatement is PsiImportStaticStatement) {
-                    imports.add(
-                        factory.createImportStaticStatement(
-                            importStatement.resolveTargetClass()!!,
-                            (element as PsiNamedElement).name!!
-                        )
-                    )
-                } else {
-                    when (element) {
-                        is PsiPackage -> imports.add(factory.createImportStatementOnDemand(element.qualifiedName))
-                        is PsiClass -> imports.add(factory.createImportStatement(element))
-                        else -> throw RuntimeException("Unable to resolve import")
-                    }
-                }
-
-                importStatement.delete()
+            importList.allImportStatements.forEach {
+                it.delete()
             }
-        }
 
-        imports.shuffle()
-        WriteCommandAction.runWriteCommandAction(project) {
-            for (i in imports.indices) {
-                if (i == 0) {
-                    importList.add(imports[i])
-                } else {
-                    importList.addAfter(imports[i], imports[i - 1])
-                }
-            }
+            val document = FileDocumentManager.getInstance()
+                                              .getDocument(importList.containingFile.virtualFile)!!
+
+            document.setText(buildString {
+                append(document.text)
+                insert(startOffset, importsText)
+            })
         }
     }
 
@@ -71,7 +60,23 @@ class Transformer(private val project: Project) {
             return when (element) {
                 is PsiMethod -> factory.createMethodFromText(element.text, element.context)
                 is PsiEnumConstant -> factory.createEnumConstantFromText(element.text, element.context)
-                is PsiField -> factory.createFieldFromText(element.text, element.context)
+                is PsiField -> {
+                    val modifiers = element.modifierList?.text?.let {
+                        if (it.isNotEmpty()) {
+                            "$it "
+                        } else {
+                            ""
+                        }
+                    }.orEmpty()
+
+                    val initializer = element.initializer?.text?.let {
+                        " = $it"
+                    }.orEmpty()
+
+                    val text = modifiers +
+                            element.type.presentableText + " " + element.name + initializer + ";"
+                    factory.createFieldFromText(text, element.context)
+                }
                 is PsiClass -> factory.createClassFromText(element.text, element.context).innerClasses.first()
                 else -> throw RuntimeException()
             }
@@ -115,19 +120,22 @@ class Transformer(private val project: Project) {
 
                 if (element is PsiJavaCodeReferenceElement) {
                     val namedElement =
-                        DumbService.getInstance(project)
-                                   .runReadActionInSmartMode(
-                                       Computable {
-                                           element.advancedResolve(false).element
-                                       }
-                                   )
+                            DumbService.getInstance(project)
+                            .runReadActionInSmartMode(
+                                Computable {
+                                    element.advancedResolve(false).element
+                                }
+                            )
 
                     if (namedElement != null) {
-                        if (namedElement !is PsiPackage && namedElement.isWritable) {
+                        if (
+                            namedElement !is PsiPackage &&
+                            namedElement.isWritable
+                        ) {
                             namedElements.add(namedElement as PsiNamedElement)
                         }
                     } else {
-                        throw RuntimeException("Failed to resolve reference to ${element.qualifiedName}")
+                        // Log.err("Failed to resolve reference to ${element.qualifiedName}")
                     }
                 }
             }
@@ -139,6 +147,10 @@ class Transformer(private val project: Project) {
             }
 
             if (it is PsiMethod && it.isConstructor) {
+                return@filter false
+            }
+
+            if (it is PsiAnonymousClass) {
                 return@filter false
             }
 
@@ -154,7 +166,6 @@ class Transformer(private val project: Project) {
             } else {
                 newIdentifier.toBigCamelNotation()
             }
-
 
             val refactoring =
                     RefactoringFactory.getInstance(project)

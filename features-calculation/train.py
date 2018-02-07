@@ -14,7 +14,7 @@ from commons import networks_folder_name, get_text_file_content, str_to_vectors_
 class CharacterNetwork:
     alphabet_size = 128  # ascii
     lstm_units = 128  # todo: should be 512
-    number_of_lstm_layers = 1  # todo: should be 3
+    number_of_lstm_layers = 2  # todo: should be 3
 
     def __init__(self, name):
         self._name = name
@@ -67,8 +67,8 @@ class CharacterNetwork:
         self._char_model = keras.models.load_model(filepath)
 
     def train_on_file(self, file):
-        batch_size = 128  # todo: should be 1
-        sample_len = 40  # todo: want 200
+        batch_size = 1  # todo: should be 1
+        sample_len = 100  # todo: want 200
 
         text = get_text_file_content(file)
         number_of_samples = len(text) - sample_len
@@ -106,17 +106,21 @@ class CharacterNetwork:
 def main(network_name, data_dir):
     network = CharacterNetwork(network_name)
 
-    number_of_epochs = 10
+    number_of_epochs = 1
     for e in range(1, number_of_epochs + 1):
         print('Epoch #', e)
         all_files = []
         for root, _, files in os.walk(data_dir):
             all_files += [root + '/' + file for file in files]
 
+        ctr = 0
         for file in all_files:
             print('Training on:', file)
             network.train_on_file(file)
             network.save()
+
+            ctr += 1
+            print(ctr, '/', len(all_files), 'files processed')
 
 
 if __name__ == "__main__":

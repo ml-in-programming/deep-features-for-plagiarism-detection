@@ -75,13 +75,10 @@ class TransformationManager(private val project: Project) {
         val list = files.toMutableList()
         shuffle(list)
 
-        // val result = list.take(1) // todo: 10?
-        val result = list.filter { it.nameWithoutExtension == "EntityDamageEvent" }
+        val result = list.take(10)
+        //val result = list.filter { it.name == "Shakespeare.java" }
 
         Log.write("${result.size} files in sample")
-        for (file in result) {
-            Log.write(file.path)
-        }
 
         return result
     }
@@ -115,7 +112,7 @@ class TransformationManager(private val project: Project) {
     private fun isAppropriate(file: VirtualFile) : Boolean {
         val document = FileDocumentManager.getInstance().getDocument(file)
 
-        return document != null // todo: && linesOfCode(document) in 400..800
+        return document != null && linesOfCode(document) in lowerBoundOnLOC..upperBoundOnLOC
     }
 
     private object TransformationManager {

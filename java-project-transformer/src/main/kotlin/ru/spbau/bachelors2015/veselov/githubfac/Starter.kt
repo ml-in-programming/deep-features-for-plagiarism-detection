@@ -5,7 +5,12 @@ import com.intellij.ide.impl.ProjectUtil
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ApplicationStarter
 import com.intellij.openapi.application.ex.ApplicationEx
+import com.intellij.openapi.project.ex.ProjectManagerEx
+import com.intellij.openapi.project.impl.ProjectManagerImpl
 import com.intellij.openapi.vfs.VirtualFileManager
+import com.intellij.testFramework.runInLoadComponentStateMode
+import com.intellij.testFramework.use
+import com.intellij.util.Time
 import java.io.File
 
 class Starter : ApplicationStarter {
@@ -56,6 +61,8 @@ class Starter : ApplicationStarter {
             e.printStackTrace()
         }
 
+        Log.write("Closing $projectFolderPath")
         application.exit(true, true)
+        // System.exit(0)
     }
 }
