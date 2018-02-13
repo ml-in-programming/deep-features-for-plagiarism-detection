@@ -4,7 +4,7 @@ import sys
 from sklearn import svm
 
 from commons import get_text_file_content
-from train import CharacterNetwork
+from network import CharacterNetwork
 
 
 def read_features(path, network):
@@ -38,13 +38,9 @@ def read_data(path, network):
     return X0 + X1, Y
 
 
-def main(network_name, training_data, validating_data):
-    network = CharacterNetwork(network_name)
-
-    clf = svm.SVC()
-    clf.fit(*read_data(training_data, network))
-
-    X, y = read_data(validating_data, network)
+def accuracy_on(data, network, clf):
+    X, y = read_data(data, network)
+    # print(X)
     actual = clf.predict(X)
 
     good = 0
@@ -52,7 +48,20 @@ def main(network_name, training_data, validating_data):
         if y[i] == actual[i]:
             good += 1
 
-    print('accuracy: ', good / len(y))
+    return good / len(y)
+
+
+def main(network_name, training_data, validating_data):
+    network = CharacterNetwork(network_name)
+
+    clf = svm.SVC()
+    clf.fit(*read_data(training_data, network))
+
+    tacc = accuracy_on(training_data, network, clf)
+    print('accuracy on training data: ', tacc)
+
+    vacc = accuracy_on(validating_data, network, clf)
+    print('accuracy on validation data: ', vacc)
 
 
 if __name__ == "__main__":

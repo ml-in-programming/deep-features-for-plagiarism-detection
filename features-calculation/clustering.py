@@ -5,7 +5,7 @@ import numpy as np
 from scipy.cluster.vq import kmeans, whiten
 
 from commons import similar
-from train import CharacterNetwork
+from network import CharacterNetwork
 
 
 def main(network_name, dir_path):
