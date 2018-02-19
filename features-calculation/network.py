@@ -10,12 +10,14 @@ from commons import networks_folder_name, get_text_file_content, str_to_vectors_
 
 
 class CharacterNetwork:
-    alphabet_size = 128  # ascii
+    # alphabet_size = 128  # ascii
     lstm_units = 256  # todo: should be 512
     number_of_lstm_layers = 1  # todo: should be 3
 
-    def __init__(self, name):
+    def __init__(self, name, alphabet):
         self._name = name
+        self.alphabet = alphabet
+        self._alphabet_size = len(alphabet)
         filepath = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                 networks_folder_name,
                                 self._name)
@@ -39,7 +41,7 @@ class CharacterNetwork:
 
         assert(self.number_of_lstm_layers > 0)
         self._char_model.add(LSTM(self.lstm_units,
-                                  input_shape=(None, self.alphabet_size),
+                                  input_shape=(None, self._alphabet_size),
                                   return_sequences=True))
 
         for _ in range(0, self.number_of_lstm_layers - 1):
@@ -54,11 +56,11 @@ class CharacterNetwork:
 
         self._char_model.add(Lambda(forget, forget_output_shape))
 
-        self._char_model.add(Dense(self.alphabet_size))
+        self._char_model.add(Dense(self._alphabet_size))
         self._char_model.add(Activation('softmax'))
 
         self._char_model.compile(loss='categorical_crossentropy',
-                                 optimizer=RMSprop(lr=0.002, decay=0.95))
+                                 optimizer=RMSprop(lr=0.002))
         # todo: was lr=0.01
 
     def __load(self, filepath):
@@ -72,6 +74,7 @@ class CharacterNetwork:
         text = get_text_file_content(file)
         number_of_samples = len(text) - sample_len
 
+        loss = []
         # todo: adjust logging
         for first_sample_id in range(0, number_of_samples, batch_size):
             sentences = []
@@ -82,15 +85,21 @@ class CharacterNetwork:
                 sentences.append(text[sample_id:sample_id + sample_len])
                 next_chars.append(text[sample_id + sample_len])
 
-            x = np.zeros((len(sentences), sample_len, self.alphabet_size), dtype=float)
-            y = np.zeros((len(sentences), self.alphabet_size), dtype=float)
+            x = np.zeros((len(sentences), sample_len, self._alphabet_size), dtype=float)
+            y = np.zeros((len(sentences), self._alphabet_size), dtype=float)
             for i, sentence in enumerate(sentences):
-                y[i, ord(next_chars[i])] = 1.0
+                y[i, self.alphabet.from_ASCII(next_chars[i])] = 1.0
                 for t, char in enumerate(sentence):
-                    x[i, t, ord(char)] = 1.0
+                    x[i, t, self.alphabet.from_ASCII(char)] = 1.0
 
-            self._char_model.fit(x, y, batch_size=batch_size, epochs=1, verbose=2)
+            history = self._char_model.fit(x, y, batch_size=batch_size, epochs=1, verbose=2)
+            print("'", next_chars[-1], "'")
+
+            loss.append(history.history['loss'][0])
+
             print(next_sample_id, '/', number_of_samples, 'samples processed')
+
+        return loss
 
     def save(self):
         self._char_model.save(os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -98,5 +107,5 @@ class CharacterNetwork:
                                            self._name))
 
     def calculate_feature(self, code):
-        batch = str_to_vectors_batch(code, self.alphabet_size)
+        batch = str_to_vectors_batch(code, self._alphabet_size)
         return np.mean(self._model.predict_on_batch(batch)[0], 0)
