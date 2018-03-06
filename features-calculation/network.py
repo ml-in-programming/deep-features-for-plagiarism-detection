@@ -11,8 +11,8 @@ from commons import networks_folder_name, get_text_file_content, str_to_vectors_
 
 class CharacterNetwork:
     # alphabet_size = 128  # ascii
-    lstm_units = 256  # todo: should be 512
-    number_of_lstm_layers = 1  # todo: should be 3
+    lstm_units = 512
+    number_of_lstm_layers = 3
 
     def __init__(self, name, alphabet):
         self._name = name
@@ -61,7 +61,7 @@ class CharacterNetwork:
 
         self._char_model.compile(loss='categorical_crossentropy',
                                  optimizer=RMSprop(lr=0.002))
-        # todo: was lr=0.01
+        # todo: was 0.01
 
     def __load(self, filepath):
         self._char_model = keras.models.load_model(filepath)

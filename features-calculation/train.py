@@ -1,21 +1,14 @@
 import os
-import statistics
 import sys
 
-import matplotlib.pyplot as plt
-
-from alphabet import Alphabet
+from alphabet import java_alphabet
 from network import CharacterNetwork
-from plot import median_for_file
 
 
 def main(network_name, data_dir):
-    alphabet = Alphabet(data_dir)
-    network = CharacterNetwork(network_name, alphabet)
+    network = CharacterNetwork(network_name, java_alphabet)
 
-    medians = []
-
-    number_of_epochs = 2
+    number_of_epochs = 2000
     for e in range(1, number_of_epochs + 1):
         print('Epoch #', e)
         all_files = []
@@ -25,20 +18,11 @@ def main(network_name, data_dir):
         ctr = 0
         for file in all_files:
             print('Training on:', file)
-            medians.append(statistics.median(network.train_on_file(file)))
+            network.train_on_file(file)
             network.save()
 
             ctr += 1
             print(ctr, '/', len(all_files), 'files processed')
-
-    plt.xlabel('Number of files')
-    plt.ylabel('Losses median')
-    plt.plot(list(range(len(medians))), medians)
-    # plt.show()
-    plt.savefig('loss.png')
-    plt.clf()
-
-    # run_character_rnn(network)
 
 
 if __name__ == "__main__":

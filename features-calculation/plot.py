@@ -7,7 +7,7 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from alphabet import Alphabet
+from alphabet import java_alphabet
 from commons import get_text_file_content
 from network import CharacterNetwork
 
@@ -55,8 +55,8 @@ def draw_error_plot(network, alphabet, file, label):
     plt.plot(list(range(len(error))), error, label = label)
 
 
-def main(network1_name, network2_name, data_dir, file):
-    alphabet = Alphabet(data_dir)
+def main(network1_name, network2_name, file):
+    alphabet = java_alphabet
     network1 = CharacterNetwork(network1_name, alphabet)
     draw_error_plot(network1, alphabet, file, '100 iterations')
 
@@ -70,4 +70,4 @@ def main(network1_name, network2_name, data_dir, file):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
+    main(sys.argv[1], sys.argv[2], sys.argv[3])

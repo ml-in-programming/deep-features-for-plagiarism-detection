@@ -4,7 +4,7 @@ import sys
 
 import numpy as np
 
-from alphabet import Alphabet
+from alphabet import java_alphabet
 from network import CharacterNetwork
 
 
@@ -16,7 +16,7 @@ def run_character_rnn(network, alphabet):
 
         return np.argmax(probas)
 
-    sentence = 'public sta'  # tic void main(String[] args)
+    sentence = 'public static void main(String[] args)'
     sys.stdout.write(sentence)
 
     for i in range(400):
@@ -34,11 +34,10 @@ def run_character_rnn(network, alphabet):
         sys.stdout.write(next_char)
 
 
-def main(network_name, data_dir):
-    alphabet = Alphabet(data_dir)
-    network = CharacterNetwork(network_name, alphabet)
-    run_character_rnn(network, alphabet)
+def main(network_name):
+    network = CharacterNetwork(network_name, java_alphabet)
+    run_character_rnn(network, java_alphabet)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1])
