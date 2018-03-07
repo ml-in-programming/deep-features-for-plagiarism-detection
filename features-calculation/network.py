@@ -12,7 +12,7 @@ from commons import networks_folder_name, get_text_file_content, str_to_vectors_
 class CharacterNetwork:
     # alphabet_size = 128  # ascii
     lstm_units = 512
-    number_of_lstm_layers = 3
+    number_of_lstm_layers = 2
 
     def __init__(self, name, alphabet):
         self._name = name
@@ -68,7 +68,7 @@ class CharacterNetwork:
         self._char_model.load_weights(filepath)
 
     def train_on_file(self, file):
-        batch_size = 1  # todo: should be 1
+        batch_size = 1
         sample_len = 20  # todo: want 200
 
         text = get_text_file_content(file)
@@ -102,9 +102,13 @@ class CharacterNetwork:
         return loss
 
     def save(self):
-        self._char_model.save(os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                                           networks_folder_name,
-                                           self._name))
+        dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                networks_folder_name)
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        self._char_model.save(os.path.join(dir_path, self._name))
 
     def calculate_feature(self, code):
         batch = str_to_vectors_batch(code, self._alphabet_size)
