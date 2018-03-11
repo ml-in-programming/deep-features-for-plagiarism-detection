@@ -12,6 +12,10 @@ def repl(matchobj):
         return ''
 
 
+def remove_comments(source):
+    return re.sub(r'(/\*.*?\*/)|(//.*?$)|(".*?")', repl, source, flags=re.DOTALL | re.MULTILINE)
+
+
 def main(dir_name):
     all_files = []
     for root, _, files in os.walk(dir_name):
@@ -19,7 +23,7 @@ def main(dir_name):
 
     for file in all_files:
         content = get_text_file_content(os.path.join(dir_name, file))
-        content = re.sub(r'(/\*.*?\*/)|(//.*?$)|(".*?")', repl, content, flags=re.DOTALL | re.MULTILINE)
+        content = remove_comments(content)
 
         pref, name = os.path.split(dir_name)
         if len(name) > 0:

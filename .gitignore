@@ -1,7 +1,7 @@
-*/.idea/
-*/out/
-*/__pycache__/
-*/networks/
-*/data/
-*/build/
-*/.gradle/
+**/.idea/
+**/out/
+**/__pycache__/
+**/networks/
+**/data/
+**/build/
+**/.gradle/

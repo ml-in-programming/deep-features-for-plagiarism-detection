@@ -16,7 +16,7 @@ def run_character_rnn(network, alphabet):
 
         return np.argmax(probas)
 
-    sentence = 'public static void main(String[] args)'
+    sentence = 'ababab' # 'public static void main(String[] args)'
     sys.stdout.write(sentence)
 
     for i in range(400):

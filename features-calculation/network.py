@@ -2,11 +2,12 @@ import os
 
 import keras
 import numpy as np
-from keras.layers import LSTM, Lambda, Dense, Activation
+from keras.layers import LSTM, Dense, Activation, TimeDistributed
 from keras.models import Sequential
 from keras.optimizers import RMSprop
 
-from commons import networks_folder_name, get_text_file_content, str_to_vectors_batch
+from commons import networks_folder_name, get_text_file_content, str_to_vectors_batch, \
+    str_to_one_hot_sequence, get_samples_from_sequence
 
 
 class CharacterNetwork:
@@ -44,62 +45,39 @@ class CharacterNetwork:
                                   input_shape=(None, self._alphabet_size),
                                   return_sequences=True))
 
-        for _ in range(0, self.number_of_lstm_layers - 1):
+        for _ in range(self.number_of_lstm_layers - 1):
             self._char_model.add(LSTM(self.lstm_units, return_sequences=True))
 
-        def forget(x):  # assuming input is a 3D tensor
-            return x[:, -1, :]
+        self._char_model.add(TimeDistributed(Dense(self._alphabet_size)))
 
-        def forget_output_shape(shape):
-            assert(len(shape) == 3)
-            return shape[0], shape[2]
-
-        self._char_model.add(Lambda(forget, forget_output_shape))
-
-        self._char_model.add(Dense(self._alphabet_size))
         self._char_model.add(Activation('softmax'))
 
         self._char_model.compile(loss='categorical_crossentropy',
                                  optimizer=RMSprop(lr=0.002))
-        # todo: was 0.01
+        # todo: decay?
 
     def __load(self, filepath):
         self._char_model = keras.models.load_model(filepath)
         self._char_model.load_weights(filepath)
 
     def train_on_file(self, file):
-        batch_size = 1
-        sample_len = 20  # todo: want 200
+        sample_size = 200
+        chunk_size = 100000
+        # todo: 499 but not 500 batches (200 last characters are not used) 100001 = f(sample_size)
+        batch_size = 1  # todo: 128?
 
-        text = get_text_file_content(file)
-        number_of_samples = len(text) - sample_len
 
-        loss = []
-        # todo: adjust logging
-        for first_sample_id in range(0, number_of_samples, batch_size):
-            sentences = []
-            next_chars = []
+        # todo: print number of chunks
+        with open(file, encoding="latin-1") as f:
+            for text in iter(lambda: f.read(chunk_size), ''):
+                sequence = str_to_one_hot_sequence(text, self.alphabet)
 
-            next_sample_id = min(first_sample_id + batch_size, number_of_samples)
-            for sample_id in range(first_sample_id, next_sample_id):
-                sentences.append(text[sample_id:sample_id + sample_len])
-                next_chars.append(text[sample_id + sample_len])
+                # todo: it is useless to predict first characters in the sequence
+                # todo: as they don't have context
+                # todo: need to consider this in get_samples_from_sequence
+                X, y = get_samples_from_sequence(sequence, sample_size)
 
-            x = np.zeros((len(sentences), sample_len, self._alphabet_size), dtype=float)
-            y = np.zeros((len(sentences), self._alphabet_size), dtype=float)
-            for i, sentence in enumerate(sentences):
-                y[i, self.alphabet.from_ASCII(next_chars[i])] = 1.0
-                for t, char in enumerate(sentence):
-                    x[i, t, self.alphabet.from_ASCII(char)] = 1.0
-
-            history = self._char_model.fit(x, y, batch_size=batch_size, epochs=1, verbose=2)
-            print("'", next_chars[-1], "'")
-
-            loss.append(history.history['loss'][0])
-
-            print(next_sample_id, '/', number_of_samples, 'samples processed')
-
-        return loss
+                self._char_model.fit(X, y, batch_size=batch_size, epochs=1)
 
     def save(self):
         dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),

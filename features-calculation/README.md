@@ -9,3 +9,9 @@ Trains network from `network/network_name` file (or creates such network) on all
 `python3 run_char_rnn.py network_name`
 
 Tries to generate a text by using network `network_name`. Beginning part of generated sentece is hardcoded into the script.
+
+## performance_test.py
+
+`python3 performance_test.py sample-file`
+
+Runs one training iteration and measures performance.
