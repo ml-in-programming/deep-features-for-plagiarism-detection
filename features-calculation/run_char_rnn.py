@@ -16,7 +16,7 @@ def run_character_rnn(network, alphabet):
 
         return np.argmax(probas)
 
-    sentence = 'ababab' # 'public static void main(String[] args)'
+    sentence = 'public static void main(String[] args)'
     sys.stdout.write(sentence)
 
     for i in range(400):
@@ -24,7 +24,7 @@ def run_character_rnn(network, alphabet):
         for t, char in enumerate(sentence):
             x_pred[0, t, alphabet.from_ASCII(char)] = 1.
 
-        preds = network._char_model.predict(x_pred, verbose=0)[0]
+        preds = network._char_model.predict(x_pred, verbose=0)[0, -1]
 
         next_index = sample(preds)
         next_char = alphabet.get_ASCII(next_index)

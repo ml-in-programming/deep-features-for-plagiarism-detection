@@ -1,4 +1,5 @@
 import os
+import math
 
 import keras
 import numpy as np
@@ -54,7 +55,7 @@ class CharacterNetwork:
 
         self._char_model.compile(loss='categorical_crossentropy',
                                  optimizer=RMSprop(lr=0.002))
-        # todo: decay?
+        # todo: decay? Should consider several epochs
 
     def __load(self, filepath):
         self._char_model = keras.models.load_model(filepath)
@@ -62,12 +63,14 @@ class CharacterNetwork:
 
     def train_on_file(self, file):
         sample_size = 200
-        chunk_size = 100000
-        # todo: 499 but not 500 batches (200 last characters are not used) 100001 = f(sample_size)
-        batch_size = 1  # todo: 128?
+        chunk_size = 500 * sample_size + 1
+        batch_size = 64
 
+        file_size = os.path.getsize(file)
 
-        # todo: print number of chunks
+        number_of_chunks = math.ceil(file_size / chunk_size)
+        print('File is split on %s chunks' % number_of_chunks)
+
         with open(file, encoding="latin-1") as f:
             for text in iter(lambda: f.read(chunk_size), ''):
                 sequence = str_to_one_hot_sequence(text, self.alphabet)
@@ -78,6 +81,9 @@ class CharacterNetwork:
                 X, y = get_samples_from_sequence(sequence, sample_size)
 
                 self._char_model.fit(X, y, batch_size=batch_size, epochs=1)
+
+                number_of_chunks -= 1
+                print('%s chunks left' % number_of_chunks)
 
     def save(self):
         dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
