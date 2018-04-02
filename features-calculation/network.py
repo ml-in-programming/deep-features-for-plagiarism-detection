@@ -2,6 +2,7 @@ import os
 import math
 
 import keras
+import numpy
 import numpy as np
 from keras.layers import LSTM, Dense, Activation, TimeDistributed
 from keras.models import Sequential
@@ -61,10 +62,9 @@ class CharacterNetwork:
         self._char_model = keras.models.load_model(filepath)
         self._char_model.load_weights(filepath)
 
-    def train_on_file(self, file):
+    def __file_to_sample_chunks(self, file):
         sample_size = 200
         chunk_size = 500 * sample_size + 1
-        batch_size = 64
 
         file_size = os.path.getsize(file)
 
@@ -80,10 +80,23 @@ class CharacterNetwork:
                 # todo: need to consider this in get_samples_from_sequence
                 X, y = get_samples_from_sequence(sequence, sample_size)
 
-                self._char_model.fit(X, y, batch_size=batch_size, epochs=1)
+                yield X, y
 
                 number_of_chunks -= 1
                 print('%s chunks left' % number_of_chunks)
+
+    def train_on_file(self, file):
+        batch_size = 64
+        for X, y in self.__file_to_sample_chunks(file):
+            self._char_model.fit(X, y, batch_size=batch_size, epochs=1)
+
+    def test_on_file(self, file):
+        batch_size = 64
+        loss = []
+        for X, y in self.__file_to_sample_chunks(file):
+            loss.append(self._char_model.evaluate(X, y, batch_size=batch_size))
+
+        return numpy.mean(loss)
 
     def save(self):
         dir_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -95,5 +108,5 @@ class CharacterNetwork:
         self._char_model.save(os.path.join(dir_path, self._name))
 
     def calculate_feature(self, code):
-        batch = str_to_vectors_batch(code, self._alphabet_size)
-        return np.mean(self._model.predict_on_batch(batch)[0], 0)
+        sequence = np.expand_dims(str_to_one_hot_sequence(code, self.alphabet), axis=0)
+        return np.mean(self._model.predict_on_batch(sequence)[0], axis=0)
