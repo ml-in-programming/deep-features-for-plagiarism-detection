@@ -4,6 +4,7 @@ import sys
 import numpy
 from sklearn import svm
 from sklearn.metrics import classification_report
+from sklearn.model_selection import train_test_split
 
 
 def read_features(path):
@@ -41,11 +42,12 @@ def score_data(clf, X, y):
     print(classification_report(y, y_pred))
 
 
-def main(train_data, test_data):
-    X_train, y_train = read_data(train_data)
-    X_test, y_test = read_data(test_data)
+def main(data):
+    X, y = read_data(data)
 
-    clf = svm.SVC()
+    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, shuffle=True)
+
+    clf = svm.SVC(kernel='linear')
     clf.fit(X_train, y_train)
 
     print('Train data:')
@@ -54,14 +56,6 @@ def main(train_data, test_data):
     print('Test data:')
     score_data(clf, X_test, y_test)
 
-    # Train data:
-    # copy: precision = 0.5427841634738186, recall = 0.9964830011723329
-    # non-copy: precision = 0.9785714285714285, recall = 0.16060961313012895
-    #
-    # Test data:
-    # copy: precision = 0.5233160621761658, recall = 1.0
-    # non-copy: precision = 1.0, recall = 0.0891089108910891
-
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1])
