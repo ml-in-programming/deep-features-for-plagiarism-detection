@@ -1,68 +1,67 @@
 import os
-
 import sys
+
+import numpy
 from sklearn import svm
-
-from commons import get_text_file_content
-from network import CharacterNetwork
+from sklearn.metrics import classification_report
 
 
-def read_features(path, network):
-    return network.calculate_feature(get_text_file_content(path))
+def read_features(path):
+    return numpy.load(path)
 
 
-def read_vector(path, network):
-    v1 = read_features(os.path.join(path, 'a.java'), network)
-    v2 = read_features(os.path.join(path, 'b.java'), network)
+def read_vector(path):
+    v1 = read_features(os.path.join(path, 'a.java.npy'))
+    v2 = read_features(os.path.join(path, 'b.java.npy'))
 
-    diff = v1 - v2
-    if diff[0] < 0:
-        diff *= -1
-
-    return diff
+    return numpy.abs(v1 - v2)
 
 
-def read_vectors(path, network):
-    return [
-        read_vector(os.path.join(path, directory), network)
-        for directory in os.listdir(path)
-    ]
+def read_vectors(path):
+    result = []
+
+    dirs = os.listdir(path)
+    for directory in dirs:
+        result.append(read_vector(os.path.join(path, directory)))
+
+    return result
 
 
-def read_data(path, network):
-    X0 = read_vectors(os.path.join(path, 'not-copies'), network)
-    X1 = read_vectors(os.path.join(path, 'copies'), network)
+def read_data(path):
+    X0 = read_vectors(os.path.join(path, 'not-copies'))
+    X1 = read_vectors(os.path.join(path, 'copies'))
 
-    Y = [0 for _ in X0] + [1 for _ in X1]
+    Y = ['not a copy' for _ in X0] + ['a copy' for _ in X1]
 
     return X0 + X1, Y
 
 
-def accuracy_on(data, network, clf):
-    X, y = read_data(data, network)
-    # print(X)
-    actual = clf.predict(X)
-
-    good = 0
-    for i in range(0, len(y)):
-        if y[i] == actual[i]:
-            good += 1
-
-    return good / len(y)
+def score_data(clf, X, y):
+    y_pred = clf.predict(X)
+    print(classification_report(y, y_pred))
 
 
-def main(network_name, training_data, validating_data):
-    network = CharacterNetwork(network_name)
+def main(train_data, test_data):
+    X_train, y_train = read_data(train_data)
+    X_test, y_test = read_data(test_data)
 
     clf = svm.SVC()
-    clf.fit(*read_data(training_data, network))
+    clf.fit(X_train, y_train)
 
-    tacc = accuracy_on(training_data, network, clf)
-    print('accuracy on training data: ', tacc)
+    print('Train data:')
+    score_data(clf, X_train, y_train)
 
-    vacc = accuracy_on(validating_data, network, clf)
-    print('accuracy on validation data: ', vacc)
+    print('Test data:')
+    score_data(clf, X_test, y_test)
+
+    # Train data:
+    # copy: precision = 0.5427841634738186, recall = 0.9964830011723329
+    # non-copy: precision = 0.9785714285714285, recall = 0.16060961313012895
+    #
+    # Test data:
+    # copy: precision = 0.5233160621761658, recall = 1.0
+    # non-copy: precision = 1.0, recall = 0.0891089108910891
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2], sys.argv[3])
+    main(sys.argv[1], sys.argv[2])
