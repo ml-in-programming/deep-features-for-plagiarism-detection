@@ -45,7 +45,7 @@ def score_data(clf, X, y):
 def main(data):
     X, y = read_data(data)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, train_size=0.8, shuffle=True)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True)
 
     clf = svm.SVC(kernel='linear')
     clf.fit(X_train, y_train)
