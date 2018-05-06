@@ -1,7 +1,14 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver
 import com.xenomachina.argparser.ArgParser
-import java.nio.file.Paths
+import org.apache.commons.io.FileUtils.toFile
+import com.github.javaparser.JavaParser
+import com.github.javaparser.ast.CompilationUnit
+import java.io.IOException
+import java.nio.file.*
+import java.nio.file.attribute.BasicFileAttributes
+
 
 enum class Operation {
     ADD, FIND_SIMILARITIES
@@ -13,18 +20,36 @@ fun main(args: Array<String>) {
     parsedArgs.run {
         val model = JavaPlagiarismDetector(Paths.get("", "model"))
 
+        val pathToResource = Paths.get(resource)
+        val typeSolver = JavaParserTypeSolver(pathToResource)
+        val javaFiles = mutableListOf<JavaSourceFile>()
+
+        Files.walkFileTree(pathToResource,
+            object : SimpleFileVisitor<Path>() {
+                override fun visitFile(
+                    path: Path,
+                    attrs: BasicFileAttributes
+                ): FileVisitResult {
+                    javaFiles.add(JavaSourceFile(path, typeSolver))
+                    return FileVisitResult.CONTINUE
+                }
+            }
+        )
+
         when (runMode) {
             Operation.ADD -> {
-                val file = JavaSourceFile(Paths.get(resource))
-                file.splitOnMethods().forEach {
-                    model.addJavaCodeSnippet(it)
+                javaFiles.forEach {
+                    it.splitOnMethods().forEach {
+                        model.addJavaCodeSnippet(it)
+                    }
                 }
             }
 
             Operation.FIND_SIMILARITIES -> {
-                val file = JavaSourceFile(Paths.get(resource))
-                file.splitOnMethods().forEach {
-                    model.findSimilarSnippets(it)
+                javaFiles.forEach {
+                    it.splitOnMethods().forEach {
+                        model.findSimilarSnippets(it)
+                    }
                 }
             }
         }

@@ -17,7 +17,12 @@ def main():
     )
 
     network = CharacterNetwork('network', java_alphabet)
-    snippet = remove_comments(sys.stdin.read())
+
+    input = sys.stdin.read().split('\0')
+    description = input[0]
+    source = input[1]
+
+    snippet = remove_comments(source)
 
     used_numbers = set(map(int, os.listdir(snippets_dir)))
     i = 1
@@ -28,7 +33,9 @@ def main():
         i += 1
 
     with open(os.path.join(snippets_dir, str(i)), 'wb') as f:
-        f.write(pickle.dumps((snippet, network.calculate_feature(snippet))))
+        f.write(pickle.dumps(
+            (description, snippet, network.calculate_feature(snippet))
+        ))
 
 
 if __name__ == '__main__':

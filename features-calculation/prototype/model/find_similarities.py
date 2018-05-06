@@ -24,18 +24,18 @@ def main():
 
     svm = load_svm('standard')
 
-    similar_snippets = []
+    similar_snippets_description = []
     for root, _, files in os.walk(snippets_dir):
         for file in files:
             with open(os.path.join(root, file), 'rb') as f:
-                another_snippet, another_feature = pickle.load(f)
+                description, another_snippet, another_feature = pickle.load(f)
 
             if svm.predict([numpy.abs(snippet_feature - another_feature)])[0] == 'a copy':
-                similar_snippets.append(another_snippet)
+                similar_snippets_description.append(description)
 
-    print('%s similar code snippets have been found:' % len(similar_snippets))
-    for s in similar_snippets:
-        print(s)
+    print('%s similar code snippets have been found:' % len(similar_snippets_description))
+    for description in similar_snippets_description:
+        print(description)
         print()
 
 

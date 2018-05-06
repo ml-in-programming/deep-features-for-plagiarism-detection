@@ -18,6 +18,8 @@ class JavaPlagiarismDetector(private val folder: Path) {
         ).start()
 
         PrintWriter(process.outputStream).use {
+            it.print(snippet.description)
+            it.print('\u0000')
             it.print(snippet.code)
         }
 
