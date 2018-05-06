@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-import sys
+import os
 
 import numpy as np
 
@@ -17,9 +17,9 @@ def run_character_rnn(network, alphabet):
         return np.argmax(probas)
 
     sentence = 'public static void main(String[] args)'
-    sys.stdout.write(sentence)
+    result = sentence
 
-    for i in range(400):
+    for i in range(1000):
         x_pred = np.zeros((1, len(sentence), len(alphabet)))
         for t, char in enumerate(sentence):
             x_pred[0, t, alphabet.from_ASCII(char)] = 1.
@@ -31,13 +31,22 @@ def run_character_rnn(network, alphabet):
 
         sentence = sentence[1:] + next_char
 
-        sys.stdout.write(next_char)
+        result = result + next_char
+
+    return result
 
 
-def main(network_name):
-    network = CharacterNetwork(network_name, java_alphabet)
-    run_character_rnn(network, java_alphabet)
+def main():
+    network_names = ['network17', 'network28', 'network40', 'network41', 'network53',
+                     'network63', 'network68', 'network74', 'network84']
+
+    for network_name in network_names:
+        network = CharacterNetwork(network_name, java_alphabet)
+        code = run_character_rnn(network, java_alphabet)
+
+        with open(os.path.join('generated-code', network_name), 'w') as f:
+            f.write(code)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main()

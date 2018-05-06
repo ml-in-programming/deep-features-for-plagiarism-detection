@@ -5,16 +5,10 @@ from alphabet import java_alphabet
 from network import CharacterNetwork
 
 
-def main(network_name, filepath):
+def main(network_name, filepath, start_epoch):
     network = CharacterNetwork(network_name, java_alphabet)
-
-    number_of_epochs = 2000
-    for e in range(1, number_of_epochs + 1):
-        print('Epoch #', e)
-
-        network.train_on_file(filepath)
-        network.save()
+    network.train_on_file(filepath, start_epoch)
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], int(sys.argv[3]))

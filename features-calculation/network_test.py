@@ -1,6 +1,10 @@
 import sys
 
+import numpy
+from matplotlib import pyplot
+
 from alphabet import java_alphabet
+from commons import get_text_file_content
 from network import CharacterNetwork
 
 
