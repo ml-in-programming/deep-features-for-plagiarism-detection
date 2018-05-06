@@ -30,7 +30,10 @@ fun main(args: Array<String>) {
                     path: Path,
                     attrs: BasicFileAttributes
                 ): FileVisitResult {
-                    javaFiles.add(JavaSourceFile(path, typeSolver))
+                    if (path.toFile().extension == "java") {
+                        javaFiles.add(JavaSourceFile(path, typeSolver))
+                    }
+
                     return FileVisitResult.CONTINUE
                 }
             }
