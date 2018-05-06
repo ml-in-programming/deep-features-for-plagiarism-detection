@@ -2,9 +2,14 @@ import os
 import sys
 
 import numpy
+import pickle
+
 from sklearn import svm
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
+
+
+models_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'svm')
 
 
 def read_features(path):
@@ -42,7 +47,12 @@ def score_data(clf, X, y):
     print(classification_report(y, y_pred))
 
 
-def main(data):
+def load_svm(model_name):
+    with open(os.path.join(models_dir, model_name), 'rb') as f:
+        return pickle.load(f)
+
+
+def main(data, model_name):
     X, y = read_data(data)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=True)
@@ -56,6 +66,9 @@ def main(data):
     print('Test data:')
     score_data(clf, X_test, y_test)
 
+    with open(os.path.join(models_dir, model_name), 'wb') as f:
+        pickle.dump(clf, f)
+
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main(sys.argv[1], sys.argv[2])
