@@ -1,4 +1,4 @@
-package ru.spbau.bachelors2015.veselov.githubfac
+package ru.spbau.bachelors2015.veselov.githubfac.model
 
 import org.apache.commons.io.IOUtils
 import java.io.PrintWriter

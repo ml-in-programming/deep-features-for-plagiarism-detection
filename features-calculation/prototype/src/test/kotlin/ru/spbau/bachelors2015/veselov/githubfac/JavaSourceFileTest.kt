@@ -6,6 +6,7 @@ import org.hamcrest.Matchers.containsInAnyOrder
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import ru.spbau.bachelors2015.veselov.githubfac.model.JavaSourceFile
 import java.nio.charset.Charset
 
 class JavaSourceFileTest {

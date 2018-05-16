@@ -1,13 +1,6 @@
 package ru.spbau.bachelors2015.veselov.githubfac
 
-import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver
 import com.xenomachina.argparser.ArgParser
-import org.apache.commons.io.FileUtils.toFile
-import com.github.javaparser.JavaParser
-import com.github.javaparser.ast.CompilationUnit
-import java.io.IOException
-import java.nio.file.*
-import java.nio.file.attribute.BasicFileAttributes
 
 
 enum class Operation {
@@ -17,44 +10,18 @@ enum class Operation {
 fun main(args: Array<String>) {
     val parsedArgs = ArgParser(args).parseInto(::Arguments)
 
+    val client = Client()
+
     parsedArgs.run {
-        val model = JavaPlagiarismDetector(Paths.get("", "model"))
+        val prIdentifier = PullRequestIdentifier(resource)
+        val sources = PullRequestSupplier(prIdentifier)
 
-        val pathToResource = Paths.get(resource)
-        val typeSolver = JavaParserTypeSolver(pathToResource)
-        val javaFiles = mutableListOf<JavaSourceFile>()
-
-        Files.walkFileTree(pathToResource,
-            object : SimpleFileVisitor<Path>() {
-                override fun visitFile(
-                    path: Path,
-                    attrs: BasicFileAttributes
-                ): FileVisitResult {
-                    if (path.toFile().extension == "java") {
-                        javaFiles.add(JavaSourceFile(path, typeSolver))
-                    }
-
-                    return FileVisitResult.CONTINUE
-                }
-            }
-        )
+        // val pathToResource = Paths.get(resource)
 
         when (runMode) {
-            Operation.ADD -> {
-                javaFiles.forEach {
-                    it.splitOnMethods().forEach {
-                        model.addJavaCodeSnippet(it)
-                    }
-                }
-            }
+            Operation.ADD -> client.addFiles(sources)
 
-            Operation.FIND_SIMILARITIES -> {
-                javaFiles.forEach {
-                    it.splitOnMethods().forEach {
-                        model.findSimilarSnippets(it)
-                    }
-                }
-            }
+            Operation.FIND_SIMILARITIES -> client.findSimilarities(sources)
         }
     }
 }

@@ -1,4 +1,4 @@
-package ru.spbau.bachelors2015.veselov.githubfac
+package ru.spbau.bachelors2015.veselov.githubfac.model
 
 import com.github.javaparser.JavaParser
 import com.github.javaparser.ast.body.MethodDeclaration
@@ -6,17 +6,24 @@ import com.github.javaparser.ast.visitor.VoidVisitorAdapter
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserMethodDeclaration
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver
+import org.apache.commons.io.IOUtils
+import java.nio.charset.Charset
 import java.nio.file.Path
 
 
 class JavaSourceFile(
-    private val pathToFile: Path,
-    private val typeSolver: JavaParserTypeSolver
+    private val code: String,
+    val fileDescription: String
 ) {
-    val description = pathToFile.toAbsolutePath().toString()
+    constructor(
+        pathToFile: Path
+    ) : this(
+        IOUtils.toString(pathToFile.toFile().inputStream(), Charset.defaultCharset()),
+        pathToFile.toAbsolutePath().toString()
+    )
 
     fun splitOnMethods() : List<JavaCodeSnippet> {
-        val compilationUnit = JavaParser.parse(pathToFile)
+        val compilationUnit = JavaParser.parse(code)
         LexicalPreservingPrinter.setup(compilationUnit)
 
         val methods = mutableListOf<MethodDeclaration>()
@@ -33,8 +40,7 @@ class JavaSourceFile(
         return methods.map {
             JavaCodeSnippet(
                 LexicalPreservingPrinter.print(it),
-                description + " " +
-                    JavaParserMethodDeclaration(it, typeSolver).qualifiedName
+                fileDescription + " " + it.nameAsString
             )
         }
     }
