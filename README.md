@@ -1,6 +1,6 @@
 # deep-features-for-plagiarism-detection
 
-###Prototype
+### Prototype
 
 In folder `features-calculation` there is a subfolder named `prototype`. It contains a prototype of a tool which can possibly detect code duplicates.
 
