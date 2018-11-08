@@ -15,8 +15,13 @@ In folder `features-calculation` there is a subfolder named `prototype`. It cont
 Prototype has two commands:
 
 - *Add pull-request from github to "database"*
+
 Command line arguments: `--add https://github.com/Ivan-Veselov/pull-request-test/pull/3`
+
 This command will save features of all methods that can be found in a given PR to `snippets` folder.
+
 - *Find methods from a given pull-request that has similar pairs inside the "database"*
+
 Command line arguments: `--find-similarities https://github.com/Ivan-Veselov/pull-request-test/pull/4`
+
 This command compares methods from given pull-request with methods that were inserted inside the "database" by the previous command and shows the results of comparison.
