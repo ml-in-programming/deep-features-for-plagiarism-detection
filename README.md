@@ -11,6 +11,7 @@ In folder `features-calculation` there is a subfolder named `prototype`. It cont
 3. In the same way prototype assumes existance of a binary file `features-calculation/svm/standard` which contains a trained instance of SVM.
 
 **How to run**:
+
 Prototype has two commands:
 
 - *Add pull-request from github to "database"*
